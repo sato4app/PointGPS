@@ -58,41 +58,112 @@ export class GPSDataManager {
         
         console.log('Excel解析開始:');
         console.log('総行数:', jsonData.length);
-        console.log('ヘッダー行:', jsonData[0]);
         
-        // ヘッダー行をスキップして、2行目以降をデータとして処理
+        if (jsonData.length < 2) {
+            console.log('データ不足 - ヘッダー行とデータ行が必要');
+            return;
+        }
+        
+        const headerRow = jsonData[0];
+        console.log('ヘッダー行:', headerRow);
+        
+        // ヘッダー行から列のインデックスを特定
+        const columnIndexes = this.identifyColumns(headerRow);
+        console.log('特定された列インデックス:', columnIndexes);
+        
+        if (!columnIndexes.lat || !columnIndexes.lng) {
+            console.log('必須列（緯度・経度）が見つかりません');
+            return;
+        }
+        
+        // 2行目以降をデータとして処理
         for (let i = 1; i < jsonData.length; i++) {
             const row = jsonData[i];
             console.log(`行${i+1}:`, row);
             
-            if (row.length >= 3 && row[1] && row[2]) {
-                const point = {
-                    id: row[0] || `P${this.nextId++}`,
-                    lat: this.parseLatLng(row[1]),
-                    lng: this.parseLatLng(row[2]),
-                    elevation: row[3] || '',
-                    gpsElevation: row[4] || '',
-                    location: row[5] || ''
-                };
-                
-                console.log('解析されたポイント:', point);
-                console.log('緯度が有効:', !isNaN(point.lat), '経度が有効:', !isNaN(point.lng));
-                
-                if (!isNaN(point.lat) && !isNaN(point.lng)) {
-                    this.gpsPoints.push(point);
-                    console.log('ポイント追加成功');
-                } else {
-                    console.log('ポイント追加失敗 - 無効な座標値');
-                }
+            // 行に十分なデータがあるかチェック
+            if (row.length === 0 || this.isEmptyRow(row)) {
+                console.log(`行${i+1}をスキップ - 空行`);
+                continue;
+            }
+            
+            const point = {
+                id: this.getCellValue(row, columnIndexes.id) || `P${this.nextId++}`,
+                lat: this.parseLatLng(this.getCellValue(row, columnIndexes.lat)),
+                lng: this.parseLatLng(this.getCellValue(row, columnIndexes.lng)),
+                elevation: this.getCellValue(row, columnIndexes.elevation) || '',
+                gpsElevation: this.getCellValue(row, columnIndexes.gpsElevation) || '',
+                location: this.getCellValue(row, columnIndexes.location) || ''
+            };
+            
+            console.log('解析されたポイント:', point);
+            console.log('緯度が有効:', !isNaN(point.lat), '経度が有効:', !isNaN(point.lng));
+            
+            if (!isNaN(point.lat) && !isNaN(point.lng)) {
+                this.gpsPoints.push(point);
+                console.log('ポイント追加成功');
             } else {
-                console.log(`行${i+1}をスキップ - 条件不適合:`, 
-                    'row.length>=3:', row.length >= 3, 
-                    'row[1]存在:', !!row[1], 
-                    'row[2]存在:', !!row[2]);
+                console.log('ポイント追加失敗 - 無効な座標値');
             }
         }
         
         console.log('解析完了 - 有効ポイント数:', this.gpsPoints.length);
+    }
+
+    // ヘッダー行から各列のインデックスを特定
+    identifyColumns(headerRow) {
+        const indexes = {};
+        
+        for (let i = 0; i < headerRow.length; i++) {
+            const header = String(headerRow[i]).trim();
+            console.log(`列${i}: "${header}"`);
+            
+            // ポイントID名: "ポイント"を含む
+            if (header.includes('ポイント')) {
+                indexes.id = i;
+                console.log('ポイントID列を特定:', i);
+            }
+            // 緯度: "緯度"と合致
+            else if (header === '緯度') {
+                indexes.lat = i;
+                console.log('緯度列を特定:', i);
+            }
+            // 経度: "経度"と合致
+            else if (header === '経度') {
+                indexes.lng = i;
+                console.log('経度列を特定:', i);
+            }
+            // 標高: "標高"と合致
+            else if (header === '標高') {
+                indexes.elevation = i;
+                console.log('標高列を特定:', i);
+            }
+            // 場所: "位置"または"場所"を含む
+            else if (header.includes('位置') || header.includes('場所')) {
+                indexes.location = i;
+                console.log('場所列を特定:', i);
+            }
+        }
+        
+        return indexes;
+    }
+
+    // セルの値を安全に取得
+    getCellValue(row, index) {
+        if (index === undefined || index >= row.length) {
+            return '';
+        }
+        const value = row[index];
+        return value !== undefined && value !== null ? String(value).trim() : '';
+    }
+
+    // 空行かどうかをチェック
+    isEmptyRow(row) {
+        return row.every(cell => 
+            cell === undefined || 
+            cell === null || 
+            String(cell).trim() === ''
+        );
     }
 
     // 緯度経度を10進数形式に変換
