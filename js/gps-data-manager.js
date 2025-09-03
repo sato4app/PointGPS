@@ -8,30 +8,46 @@ export class GPSDataManager {
     // Excelファイルを読み込む
     async loadExcelFile(file) {
         return new Promise((resolve, reject) => {
+            console.log('Excel読み込み開始:', file.name, file.size, 'bytes');
+            
             const reader = new FileReader();
             
             reader.onload = (e) => {
                 try {
+                    console.log('ファイル読み込み完了 - バイト数:', e.target.result.byteLength);
+                    
                     const data = new Uint8Array(e.target.result);
+                    console.log('Uint8Array作成完了');
+                    
                     const workbook = XLSX.read(data, { type: 'array' });
+                    console.log('Workbook読み込み完了');
+                    console.log('シート名一覧:', workbook.SheetNames);
                     
                     // 最初のシートを取得
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
+                    console.log('対象シート:', firstSheetName);
+                    console.log('ワークシート内容:', worksheet);
                     
                     // JSONに変換
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    console.log('JSON変換完了');
                     
                     // データを解析してGPSポイントに変換
                     this.parseExcelData(jsonData);
                     
                     resolve(this.gpsPoints.length);
                 } catch (error) {
+                    console.error('Excel処理エラー:', error);
                     reject(error);
                 }
             };
             
-            reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
+            reader.onerror = () => {
+                console.error('ファイル読み込みエラー');
+                reject(new Error('ファイル読み込みエラー'));
+            };
+            
             reader.readAsArrayBuffer(file);
         });
     }
@@ -40,9 +56,15 @@ export class GPSDataManager {
     parseExcelData(jsonData) {
         this.gpsPoints = [];
         
+        console.log('Excel解析開始:');
+        console.log('総行数:', jsonData.length);
+        console.log('ヘッダー行:', jsonData[0]);
+        
         // ヘッダー行をスキップして、2行目以降をデータとして処理
         for (let i = 1; i < jsonData.length; i++) {
             const row = jsonData[i];
+            console.log(`行${i+1}:`, row);
+            
             if (row.length >= 3 && row[1] && row[2]) {
                 const point = {
                     id: row[0] || `P${this.nextId++}`,
@@ -53,16 +75,32 @@ export class GPSDataManager {
                     location: row[5] || ''
                 };
                 
+                console.log('解析されたポイント:', point);
+                console.log('緯度が有効:', !isNaN(point.lat), '経度が有効:', !isNaN(point.lng));
+                
                 if (!isNaN(point.lat) && !isNaN(point.lng)) {
                     this.gpsPoints.push(point);
+                    console.log('ポイント追加成功');
+                } else {
+                    console.log('ポイント追加失敗 - 無効な座標値');
                 }
+            } else {
+                console.log(`行${i+1}をスキップ - 条件不適合:`, 
+                    'row.length>=3:', row.length >= 3, 
+                    'row[1]存在:', !!row[1], 
+                    'row[2]存在:', !!row[2]);
             }
         }
+        
+        console.log('解析完了 - 有効ポイント数:', this.gpsPoints.length);
     }
 
     // 緯度経度を10進数形式に変換
     parseLatLng(value) {
+        console.log('parseLatLng呼び出し - 入力値:', value, 'タイプ:', typeof value);
+        
         if (typeof value === 'number') {
+            console.log('数値として処理:', value);
             return value;
         }
         
@@ -73,13 +111,18 @@ export class GPSDataManager {
                 const degrees = parseFloat(dmsMatch[1]);
                 const minutes = parseFloat(dmsMatch[2]);
                 const seconds = parseFloat(dmsMatch[3]);
-                return degrees + minutes / 60 + seconds / 3600;
+                const result = degrees + minutes / 60 + seconds / 3600;
+                console.log('DMS変換:', value, '->', result);
+                return result;
             }
             
             // 通常の数値文字列として解析
-            return parseFloat(value);
+            const result = parseFloat(value);
+            console.log('文字列を数値変換:', value, '->', result);
+            return result;
         }
         
+        console.log('変換不可能な値:', value);
         return NaN;
     }
 
