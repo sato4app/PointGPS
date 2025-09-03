@@ -8,46 +8,30 @@ export class GPSDataManager {
     // Excelファイルを読み込む
     async loadExcelFile(file) {
         return new Promise((resolve, reject) => {
-            console.log('Excel読み込み開始:', file.name, file.size, 'bytes');
-            
             const reader = new FileReader();
             
             reader.onload = (e) => {
                 try {
-                    console.log('ファイル読み込み完了 - バイト数:', e.target.result.byteLength);
-                    
                     const data = new Uint8Array(e.target.result);
-                    console.log('Uint8Array作成完了');
-                    
                     const workbook = XLSX.read(data, { type: 'array' });
-                    console.log('Workbook読み込み完了');
-                    console.log('シート名一覧:', workbook.SheetNames);
                     
                     // 最初のシートを取得
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    console.log('対象シート:', firstSheetName);
-                    console.log('ワークシート内容:', worksheet);
                     
                     // JSONに変換
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    console.log('JSON変換完了');
                     
                     // データを解析してGPSポイントに変換
                     this.parseExcelData(jsonData);
                     
                     resolve(this.gpsPoints.length);
                 } catch (error) {
-                    console.error('Excel処理エラー:', error);
                     reject(error);
                 }
             };
             
-            reader.onerror = () => {
-                console.error('ファイル読み込みエラー');
-                reject(new Error('ファイル読み込みエラー'));
-            };
-            
+            reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
             reader.readAsArrayBuffer(file);
         });
     }
@@ -56,34 +40,25 @@ export class GPSDataManager {
     parseExcelData(jsonData) {
         this.gpsPoints = [];
         
-        console.log('Excel解析開始:');
-        console.log('総行数:', jsonData.length);
-        
         if (jsonData.length < 2) {
-            console.log('データ不足 - ヘッダー行とデータ行が必要');
             return;
         }
         
         const headerRow = jsonData[0];
-        console.log('ヘッダー行:', headerRow);
         
         // ヘッダー行から列のインデックスを特定
         const columnIndexes = this.identifyColumns(headerRow);
-        console.log('特定された列インデックス:', columnIndexes);
         
         if (!columnIndexes.lat || !columnIndexes.lng) {
-            console.log('必須列（緯度・経度）が見つかりません');
             return;
         }
         
         // 2行目以降をデータとして処理
         for (let i = 1; i < jsonData.length; i++) {
             const row = jsonData[i];
-            console.log(`行${i+1}:`, row);
             
             // 行に十分なデータがあるかチェック
             if (row.length === 0 || this.isEmptyRow(row)) {
-                console.log(`行${i+1}をスキップ - 空行`);
                 continue;
             }
             
@@ -96,18 +71,10 @@ export class GPSDataManager {
                 location: this.getCellValue(row, columnIndexes.location) || ''
             };
             
-            console.log('解析されたポイント:', point);
-            console.log('緯度が有効:', !isNaN(point.lat), '経度が有効:', !isNaN(point.lng));
-            
             if (!isNaN(point.lat) && !isNaN(point.lng)) {
                 this.gpsPoints.push(point);
-                console.log('ポイント追加成功');
-            } else {
-                console.log('ポイント追加失敗 - 無効な座標値');
             }
         }
-        
-        console.log('解析完了 - 有効ポイント数:', this.gpsPoints.length);
     }
 
     // ヘッダー行から各列のインデックスを特定
@@ -116,32 +83,26 @@ export class GPSDataManager {
         
         for (let i = 0; i < headerRow.length; i++) {
             const header = String(headerRow[i]).trim();
-            console.log(`列${i}: "${header}"`);
             
             // ポイントID名: "ポイント"を含む
             if (header.includes('ポイント')) {
                 indexes.id = i;
-                console.log('ポイントID列を特定:', i);
             }
             // 緯度: "緯度"と合致
             else if (header === '緯度') {
                 indexes.lat = i;
-                console.log('緯度列を特定:', i);
             }
             // 経度: "経度"と合致
             else if (header === '経度') {
                 indexes.lng = i;
-                console.log('経度列を特定:', i);
             }
             // 標高: "標高"と合致
             else if (header === '標高') {
                 indexes.elevation = i;
-                console.log('標高列を特定:', i);
             }
             // 場所: "位置"または"場所"を含む
             else if (header.includes('位置') || header.includes('場所')) {
                 indexes.location = i;
-                console.log('場所列を特定:', i);
             }
         }
         
@@ -168,10 +129,7 @@ export class GPSDataManager {
 
     // 緯度経度を10進数形式に変換
     parseLatLng(value) {
-        console.log('parseLatLng呼び出し - 入力値:', value, 'タイプ:', typeof value);
-        
         if (typeof value === 'number') {
-            console.log('数値として処理:', value);
             return value;
         }
         
@@ -182,18 +140,13 @@ export class GPSDataManager {
                 const degrees = parseFloat(dmsMatch[1]);
                 const minutes = parseFloat(dmsMatch[2]);
                 const seconds = parseFloat(dmsMatch[3]);
-                const result = degrees + minutes / 60 + seconds / 3600;
-                console.log('DMS変換:', value, '->', result);
-                return result;
+                return degrees + minutes / 60 + seconds / 3600;
             }
             
             // 通常の数値文字列として解析
-            const result = parseFloat(value);
-            console.log('文字列を数値変換:', value, '->', result);
-            return result;
+            return parseFloat(value);
         }
         
-        console.log('変換不可能な値:', value);
         return NaN;
     }
 
@@ -278,6 +231,60 @@ export class GPSDataManager {
         XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
         
         XLSX.writeFile(workbook, 'gps_points.xlsx');
+    }
+
+    // GeoJSONファイルを読み込む
+    async loadGeoJSONFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    const jsonData = JSON.parse(e.target.result);
+                    this.parseGeoJSONData(jsonData);
+                    resolve(this.gpsPoints.length);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
+            reader.readAsText(file);
+        });
+    }
+
+    // GeoJSONデータを解析
+    parseGeoJSONData(geojsonData) {
+        this.gpsPoints = [];
+        
+        if (geojsonData.type !== 'FeatureCollection' || !Array.isArray(geojsonData.features)) {
+            throw new Error('無効なGeoJSON形式です');
+        }
+        
+        geojsonData.features.forEach((feature, index) => {
+            if (feature.type === 'Feature' && 
+                feature.geometry && 
+                feature.geometry.type === 'Point' && 
+                Array.isArray(feature.geometry.coordinates) &&
+                feature.geometry.coordinates.length >= 2) {
+                
+                const coords = feature.geometry.coordinates;
+                const properties = feature.properties || {};
+                
+                const point = {
+                    id: properties.id || properties.name || `P${this.nextId++}`,
+                    lat: coords[1],
+                    lng: coords[0],
+                    elevation: properties.elevation || properties['標高'] || '',
+                    gpsElevation: properties.gpsElevation || properties['GPS標高'] || '',
+                    location: properties.location || properties['場所'] || properties['位置'] || ''
+                };
+                
+                if (!isNaN(point.lat) && !isNaN(point.lng)) {
+                    this.gpsPoints.push(point);
+                }
+            }
+        });
     }
 
     // GeoJSONとして出力

@@ -93,6 +93,37 @@ body {
     transform: translateY(0);
 }
 
+/* データ読み込みボタン */
+.import-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.import-button {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.import-button:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.import-button:active {
+    transform: translateY(0);
+}
+
 /* 情報フィールドコンテナ */
 .info-field-container {
     display: flex;
@@ -109,12 +140,25 @@ body {
 }
 
 .info-field-container input[type="text"] {
-    flex: 1;
     padding: 6px 8px;
     border: 1px solid #bdc3c7;
     border-radius: 4px;
     font-size: 13px;
     background-color: #ecf0f1;
+}
+
+/* 特定フィールドの幅設定 */
+#pointCountField {
+    width: 48px;
+}
+
+#pointIdField {
+    width: 60px;
+}
+
+#latDecimalField,
+#lngDecimalField {
+    width: 160px;
 }
 
 .unit-label {

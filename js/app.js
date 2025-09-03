@@ -57,6 +57,28 @@ class PointGPSApp {
             }
         });
 
+        // GeoJSON読み込みボタン
+        const loadGeoJsonBtn = document.getElementById('loadGeoJsonBtn');
+        const geoJsonInput = document.getElementById('geoJsonInput');
+        
+        loadGeoJsonBtn.addEventListener('click', () => {
+            geoJsonInput.click();
+        });
+        
+        geoJsonInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    const pointCount = await this.gpsDataManager.loadGeoJSONFile(file);
+                    this.pointManager.displayAllPoints();
+                    this.showMessage(`${pointCount}個のポイントを読み込みました`);
+                } catch (error) {
+                    console.error('GeoJSON読み込みエラー:', error);
+                    this.showError('GeoJSONファイルの読み込みに失敗しました');
+                }
+            }
+        });
+
         // ポイント操作ボタン
         document.getElementById('addPointBtn').addEventListener('click', () => {
             this.pointManager.setAddingMode(true);
