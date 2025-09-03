@@ -160,7 +160,7 @@ body {
 
 #latDecimalField,
 #lngDecimalField {
-    width: 160px;
+    width: 120px;
     flex: none;
 }
 

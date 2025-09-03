@@ -6,7 +6,7 @@
     <meta name="description" content="国土地理院地図上でGPSポイントの表示・編集・管理を行うWebアプリケーション">
     <meta name="keywords" content="GPS, 地図, 国土地理院, ポイント編集">
     <meta name="author" content="PointGPS">
-    <title>PointGPS - GPS ポイント編集アプリ</title>
+    <title>PointGPS - ポイント(GPS)編集アプリ</title>
 
     <!-- セキュリティとパフォーマンスのためのメタタグ -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -36,10 +36,10 @@
     <main id="map" role="main" aria-label="国土地理院地図"></main>
 
     <!-- アプリケーション制御パネル -->
-    <aside class="overlay-controls" role="complementary" aria-label="GPS ポイント編集ツール">
+    <aside class="overlay-controls" role="complementary" aria-label="ポイント(GPS)編集ツール">
         <!-- GPS ポイント編集パネル -->
         <section id="pointGpsEditor" class="editor-panel" aria-labelledby="gps-editor-title">
-            <h2 id="gps-editor-title">GPS ポイント編集</h2>
+            <h2 id="gps-editor-title">ポイント(GPS)編集</h2>
             
             <!-- データ読み込みボタン -->
             <div class="import-buttons">
@@ -48,7 +48,7 @@
                         type="button" 
                         aria-describedby="load-gps-help" 
                         class="import-button">
-                    Excel読込
+                    読込(Excel)
                 </button>
                 
                 <input type="file" id="geoJsonInput" accept=".json,.geojson" aria-label="GeoJSONファイル選択" style="display: none;">
@@ -56,7 +56,7 @@
                         type="button" 
                         aria-describedby="load-geojson-help" 
                         class="import-button">
-                    GeoJSON読込
+                    読込(GeoJSON)
                 </button>
             </div>
             <div id="load-gps-help" class="visually-hidden">ExcelファイルからGPS座標データを読み込みます</div>
@@ -74,9 +74,9 @@
             <div id="pointInfoContainer" class="point-info-container">
                 <h3 class="point-info-title">選択したポイントの位置(GPS)情報</h3>
                 
-                <!-- ID名 -->
+                <!-- ポイントID -->
                 <div class="info-field-row">
-                    <label for="pointIdField">ID名</label>
+                    <label for="pointIdField">ポイントID</label>
                     <input type="text" id="pointIdField" maxlength="5">
                 </div>
                 
@@ -124,8 +124,8 @@
 
             <!-- データ出力ボタン -->
             <div class="export-buttons">
-                <button id="exportExcelBtn" class="control-button" type="button">Excel出力</button>
-                <button id="exportGeoJsonBtn" class="control-button" type="button">GeoJSON出力</button>
+                <button id="exportExcelBtn" class="control-button" type="button">出力(Excel)</button>
+                <button id="exportGeoJsonBtn" class="control-button" type="button">出力(GeoJSON)</button>
             </div>
         </section>
     </aside>
