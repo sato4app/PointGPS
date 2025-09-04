@@ -181,10 +181,10 @@ export class PointManager {
     // ポイント情報表示を更新
     updatePointInfoDisplay(point) {
         document.getElementById('pointIdField').value = point.id;
-        document.getElementById('latDecimalField').value = point.lat.toFixed(6);
-        document.getElementById('lngDecimalField').value = point.lng.toFixed(6);
+        document.getElementById('latDecimalField').value = point.lat.toFixed(5);
+        document.getElementById('lngDecimalField').value = point.lng.toFixed(5);
         document.getElementById('dmsField').value = 
-            this.gpsDataManager.toDMS(point.lat) + ' / ' + this.gpsDataManager.toDMS(point.lng);
+            this.formatDMSCoordinates(point.lng, point.lat);
         document.getElementById('elevationField').value = point.elevation;
         document.getElementById('gpsElevationField').value = point.gpsElevation;
         document.getElementById('locationField').value = point.location;
@@ -230,6 +230,30 @@ export class PointManager {
             // ツールチップを更新
             marker.setTooltipContent(updates.id);
         }
+    }
+
+    // DMS座標を「東経・北緯」順でE/N付きでフォーマット
+    formatDMSCoordinates(lng, lat) {
+        const lngDMS = this.toDMSWithDirection(lng, true);
+        const latDMS = this.toDMSWithDirection(lat, false);
+        return `${lngDMS} ${latDMS}`;
+    }
+    
+    // 10進数をDMS形式に変換（E/N方向付き）
+    toDMSWithDirection(decimal, isLongitude) {
+        const absDecimal = Math.abs(decimal);
+        const degrees = Math.floor(absDecimal);
+        const minutes = Math.floor((absDecimal - degrees) * 60);
+        const seconds = ((absDecimal - degrees - minutes / 60) * 3600).toFixed(2);
+        
+        let direction;
+        if (isLongitude) {
+            direction = decimal >= 0 ? 'E' : 'W';
+        } else {
+            direction = decimal >= 0 ? 'N' : 'S';
+        }
+        
+        return `${degrees}°${minutes}'${seconds}"${direction}`;
     }
 
     // メッセージを表示
