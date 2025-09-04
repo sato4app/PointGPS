@@ -218,10 +218,10 @@ export class FileHandler {
     
     /**
      * デフォルトファイル名を生成
-     * @returns {string} ポイントGPS_yyyymmdd
+     * @returns {string} ポイントGPS-yyyymmdd
      */
     getDefaultFileName() {
-        return `ポイントGPS_${this.getTodayString()}`;
+        return `ポイントGPS-${this.getTodayString()}`;
     }
 
     /**
