@@ -360,8 +360,8 @@ export class GPSDataManager {
                     elevationValue = parseFloat(point.elevation);
                 }
                 
-                // 標高データが存在し、有効な数値の場合は整数四捨五入して追加
-                if (!isNaN(elevationValue)) {
+                // 標高データが存在し、有効な数値で、かつ0でない場合のみ追加
+                if (!isNaN(elevationValue) && elevationValue !== 0) {
                     coordinates.push(Math.round(elevationValue));
                 }
                 
