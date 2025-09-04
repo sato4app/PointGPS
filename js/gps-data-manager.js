@@ -85,8 +85,8 @@ export class GPSDataManager {
             else if (header === '標高') {
                 indexes.elevation = i;
             }
-            // 場所: "位置"または"場所"を含む
-            else if (header.includes('位置') || header.includes('場所')) {
+            // 場所: "名称"、"位置"または"場所"を含む
+            else if (header.includes('名称') || header.includes('位置') || header.includes('場所')) {
                 indexes.location = i;
             }
         }
