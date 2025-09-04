@@ -100,8 +100,11 @@ class PointGPSApp {
         });
 
         document.getElementById('deletePointBtn').addEventListener('click', () => {
-            if (confirm('選択したポイントを削除しますか？')) {
+            const selectedPointId = this.pointManager.selectedPointId;
+            if (selectedPointId && confirm(`選択したポイント${selectedPointId}を削除しますか？`)) {
                 this.pointManager.deleteSelectedPoint();
+            } else if (!selectedPointId) {
+                this.pointManager.showMessage('削除するポイントが選択されていません');
             }
         });
 

@@ -130,7 +130,7 @@ export class PointManager {
                 // 表示も更新
                 document.getElementById('gpsElevationField').value = elevation;
                 
-                this.showMessage(`標高データを取得しました: ${elevation}m`);
+                // this.showMessage(`標高データを取得しました: ${elevation}m`);
             }
         } catch (error) {
             console.warn('標高取得中にエラーが発生しました:', error);
