@@ -147,7 +147,7 @@ export class GPSDataManager {
     // ポイントを追加
     addPoint(lat, lng, id = null, elevation = '', gpsElevation = '', location = '') {
         const point = {
-            id: id || `P${this.nextId++}`,
+            id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
             elevation: elevation,
@@ -157,6 +157,26 @@ export class GPSDataManager {
         
         this.gpsPoints.push(point);
         return point;
+    }
+    
+    // 仮IDを生成（仮01から始まる連番）
+    generateTemporaryId() {
+        const existingTempIds = this.gpsPoints
+            .map(p => p.id)
+            .filter(id => id.match(/^仮\d{2}$/))
+            .map(id => parseInt(id.substring(1)))
+            .sort((a, b) => a - b);
+        
+        let nextNum = 1;
+        for (const num of existingTempIds) {
+            if (num === nextNum) {
+                nextNum++;
+            } else {
+                break;
+            }
+        }
+        
+        return `仮${nextNum.toString().padStart(2, '0')}`;
     }
 
     // ポイントを更新

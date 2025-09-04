@@ -156,13 +156,6 @@ class PointGPSApp {
                 this.showMessage(`ポイントIDを「${formattedValue}」に修正しました`);
             }
             
-            // 形式チェック
-            if (!Validators.isValidPointIdFormat(formattedValue) && formattedValue.trim() !== '') {
-                this.showError('ポイントIDは「X-nn」形式（例：A-01）で入力してください');
-                e.target.focus();
-                return;
-            }
-            
             // 値が変更された場合のみ更新処理を実行
             if (originalValue !== e.target.value) {
                 this.pointManager.updateSelectedPointInfo();

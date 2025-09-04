@@ -17,7 +17,7 @@ export class Validators {
     }
 
     /**
-     * ポイントIDを「X-nn」形式に自動修正する
+     * ポイントIDを「X-nn」形式に自動修正する（漢字・カナは変換しない）
      * @param {string} value - 修正する値
      * @returns {string} 修正された値
      */
@@ -29,6 +29,11 @@ export class Validators {
         const original = value.trim();
         if (original === '') {
             return value;
+        }
+        
+        // 漢字・ひらがな・カタカナが含まれる場合はそのまま返す
+        if (/[ぁ-ん]|[ァ-ヶ]|[一-龯]/.test(original)) {
+            return original;
         }
         
         // 1. 全角文字を半角に変換（英文字は大文字化）
