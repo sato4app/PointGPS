@@ -31,13 +31,13 @@ export class Validators {
             return value;
         }
         
-        // 漢字・ひらがな・カタカナが含まれる場合はそのまま返す
-        if (/[ぁ-ん]|[ァ-ヶ]|[一-龯]/.test(original)) {
-            return original;
-        }
-        
-        // 1. 全角文字を半角に変換（英文字は大文字化）
+        // 1. 全角英数字を半角に変換（英文字は大文字化）
         let converted = this.convertFullWidthToHalfWidth(original);
+        
+        // 漢字・ひらがな・カタカナが含まれる場合は、全角英数字変換のみ実行してそのまま返す
+        if (/[ぁ-ん]|[ァ-ヶ]|[一-龯]/.test(converted)) {
+            return converted;
+        }
         
         // 2. スペースを全角・半角とも削除
         converted = converted.replace(/[\s　]/g, '');
