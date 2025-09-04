@@ -51,8 +51,8 @@ export class GPSDataManager {
                 id: this.getCellValue(row, columnIndexes.id) || `P${this.nextId++}`,
                 lat: this.parseLatLng(this.getCellValue(row, columnIndexes.lat)),
                 lng: this.parseLatLng(this.getCellValue(row, columnIndexes.lng)),
-                elevation: this.getCellValue(row, columnIndexes.elevation) || '',
-                gpsElevation: this.getCellValue(row, columnIndexes.gpsElevation) || '',
+                elevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.elevation)),
+                gpsElevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.gpsElevation)),
                 location: this.getCellValue(row, columnIndexes.location) || ''
             };
             
@@ -144,14 +144,29 @@ export class GPSDataManager {
         return `${direction}${degrees}°${minutes}'${seconds}"`;
     }
 
+    // 標高値を正規化（数値の場合は整数四捨五入、そうでなければそのまま）
+    normalizeElevation(elevation) {
+        if (!elevation || elevation === '') {
+            return '';
+        }
+        
+        const numValue = parseFloat(elevation);
+        if (!isNaN(numValue)) {
+            return String(Math.round(numValue));
+        }
+        
+        // 数値として扱えない場合はそのまま返す
+        return String(elevation);
+    }
+
     // ポイントを追加
     addPoint(lat, lng, id = null, elevation = '', gpsElevation = '', location = '') {
         const point = {
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
-            elevation: elevation,
-            gpsElevation: gpsElevation,
+            elevation: this.normalizeElevation(elevation),
+            gpsElevation: this.normalizeElevation(gpsElevation),
             location: location
         };
         
@@ -183,6 +198,14 @@ export class GPSDataManager {
     updatePoint(pointId, updates) {
         const index = this.gpsPoints.findIndex(p => p.id === pointId);
         if (index !== -1) {
+            // 標高データがある場合は正規化
+            if ('elevation' in updates) {
+                updates.elevation = this.normalizeElevation(updates.elevation);
+            }
+            if ('gpsElevation' in updates) {
+                updates.gpsElevation = this.normalizeElevation(updates.gpsElevation);
+            }
+            
             Object.assign(this.gpsPoints[index], updates);
             return this.gpsPoints[index];
         }
@@ -281,8 +304,8 @@ export class GPSDataManager {
                     id: properties.id || `P${this.nextId++}`,
                     lat: coords[1],
                     lng: coords[0],
-                    elevation: elevation,
-                    gpsElevation: properties.gpsElevation || properties['GPS標高'] || '',
+                    elevation: this.normalizeElevation(elevation),
+                    gpsElevation: this.normalizeElevation(properties.gpsElevation || properties['GPS標高'] || ''),
                     location: properties.name || properties.location || properties['場所'] || properties['位置'] || ''
                 };
                 
@@ -305,10 +328,10 @@ export class GPSDataManager {
                 // 標高データがある場合のみcoordinatesに追加
                 const coordinates = [point.lng, point.lat];
                 
-                // 標高データが存在し、有効な数値の場合は追加
+                // 標高データが存在し、有効な数値の場合は整数四捨五入して追加
                 const elevation = parseFloat(point.elevation);
                 if (!isNaN(elevation) && point.elevation !== '') {
-                    coordinates.push(elevation);
+                    coordinates.push(Math.round(elevation));
                 }
                 
                 return {
