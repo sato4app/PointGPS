@@ -107,8 +107,8 @@ class PointGPSApp {
         // 出力ボタン
         document.getElementById('exportExcelBtn').addEventListener('click', async () => {
             try {
-                const currentFileName = this.fileHandler.getCurrentFileName() || 'gps_points';
-                const result = await this.gpsDataManager.exportToExcel(currentFileName);
+                const defaultFileName = this.fileHandler.getDefaultFileName();
+                const result = await this.gpsDataManager.exportToExcel(defaultFileName);
                 if (result.success) {
                     this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
                 } else if (result.error !== 'キャンセル') {
@@ -122,8 +122,8 @@ class PointGPSApp {
 
         document.getElementById('exportGeoJsonBtn').addEventListener('click', async () => {
             try {
-                const currentFileName = this.fileHandler.getCurrentFileName() || 'gps_points';
-                const result = await this.gpsDataManager.exportToGeoJSON(currentFileName);
+                const defaultFileName = this.fileHandler.getDefaultFileName();
+                const result = await this.gpsDataManager.exportToGeoJSON(defaultFileName);
                 if (result.success) {
                     this.showMessage(`GeoJSONファイルを保存しました: ${result.filename}`);
                 } else if (result.error !== 'キャンセル') {

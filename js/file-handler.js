@@ -55,10 +55,10 @@ export class FileHandler {
             this.currentFileName = file.name.replace(/\.xlsx$/i, '');
             return { file, fileName: this.currentFileName };
         } else if (this.isGeoJSONFile(file)) {
-            this.currentFileName = file.name.replace(/\.(json|geojson)$/i, '');
+            this.currentFileName = file.name.replace(/\.geojson$/i, '');
             return { file, fileName: this.currentFileName };
         } else {
-            throw new Error('サポートされたファイル形式(.xlsx, .json, .geojson)を選択してください');
+            throw new Error('サポートされたファイル形式(.xlsx, .geojson)を選択してください');
         }
     }
 
@@ -103,7 +103,7 @@ export class FileHandler {
      */
     async loadGeoJSONFile(file) {
         if (!this.isGeoJSONFile(file)) {
-            throw new Error('GeoJSONファイル(.json, .geojson)を選択してください');
+            throw new Error('GeoJSONファイル(.geojson)を選択してください');
         }
         
         return new Promise((resolve, reject) => {
@@ -158,7 +158,7 @@ export class FileHandler {
                     types: [{
                         description: 'GeoJSON Files',
                         accept: {
-                            'application/json': ['.json', '.geojson']
+                            'application/json': ['.geojson']
                         }
                     }]
                 };
@@ -203,6 +203,26 @@ export class FileHandler {
     getCurrentFileName() {
         return this.currentFileName;
     }
+    
+    /**
+     * 現在の日付をyyyymmdd形式で取得
+     * @returns {string} yyyymmdd形式の日付
+     */
+    getTodayString() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}${month}${day}`;
+    }
+    
+    /**
+     * デフォルトファイル名を生成
+     * @returns {string} ポイントGPS_yyyymmdd
+     */
+    getDefaultFileName() {
+        return `ポイントGPS_${this.getTodayString()}`;
+    }
 
     /**
      * Excelファイルかどうかを判定
@@ -221,7 +241,7 @@ export class FileHandler {
      */
     isGeoJSONFile(file) {
         const fileName = file.name.toLowerCase();
-        return (fileName.endsWith('.json') || fileName.endsWith('.geojson')) && 
+        return fileName.endsWith('.geojson') && 
                (file.type === 'application/json' || file.type === '');
     }
 
