@@ -135,7 +135,7 @@ body {
 .info-field-container label {
     font-weight: 500;
     color: #34495e;
-    min-width: 80px;
+    min-width: 60px;
     font-size: 13px;
 }
 
@@ -405,4 +405,33 @@ select:focus {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Leafletコントロールのカスタマイズ */
+/* ズームコントロールをスケールの上に配置 */
+.leaflet-control-zoom {
+    margin-bottom: 10px !important;
+}
+
+.leaflet-control-scale {
+    margin-bottom: 10px !important;
+}
+
+/* ズームコントロールのスタイリング */
+.leaflet-control-zoom a {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    color: #333 !important;
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background-color: #f4f4f4 !important;
+}
+
+/* スケールコントロールのスタイリング */
+.leaflet-control-scale-line {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid #777 !important;
+    color: #333 !important;
+    font-size: 11px !important;
 }
