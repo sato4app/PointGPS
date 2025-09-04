@@ -159,6 +159,30 @@ export class GPSDataManager {
         return String(elevation);
     }
 
+    // 国土地理院の標高APIから標高データを取得
+    async fetchElevationFromAPI(lat, lng) {
+        try {
+            const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error('標高APIへのアクセスに失敗しました');
+            }
+            
+            const data = await response.json();
+            
+            if (data.elevation !== null && data.elevation !== undefined) {
+                // 標高データを整数四捨五入
+                return Math.round(parseFloat(data.elevation));
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn('標高取得エラー:', error);
+            return null;
+        }
+    }
+
     // ポイントを追加
     addPoint(lat, lng, id = null, elevation = '', gpsElevation = '', location = '') {
         const point = {
@@ -325,13 +349,20 @@ export class GPSDataManager {
         const geojson = {
             type: 'FeatureCollection',
             features: this.gpsPoints.map(point => {
-                // 標高データがある場合のみcoordinatesに追加
+                // 標高データがある場合のみcoordinatesに追加（GPS標高を優先）
                 const coordinates = [point.lng, point.lat];
                 
+                // GPS標高を優先、なければ標高を使用
+                let elevationValue = null;
+                if (point.gpsElevation && point.gpsElevation !== '') {
+                    elevationValue = parseFloat(point.gpsElevation);
+                } else if (point.elevation && point.elevation !== '') {
+                    elevationValue = parseFloat(point.elevation);
+                }
+                
                 // 標高データが存在し、有効な数値の場合は整数四捨五入して追加
-                const elevation = parseFloat(point.elevation);
-                if (!isNaN(elevation) && point.elevation !== '') {
-                    coordinates.push(Math.round(elevation));
+                if (!isNaN(elevationValue)) {
+                    coordinates.push(Math.round(elevationValue));
                 }
                 
                 return {

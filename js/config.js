@@ -10,7 +10,7 @@ export const CONFIG = {
     
     // ポイントマーカー設定
     POINT_MARKER_COLOR: '#ff0000',
-    POINT_MARKER_RADIUS: 8,
+    POINT_MARKER_RADIUS: 6,
     SELECTED_POINT_COLOR: '#00ff00',
     
     // ファイルタイプ

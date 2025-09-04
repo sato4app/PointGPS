@@ -81,7 +81,7 @@ export class PointManager {
     }
 
     // ポイントを選択
-    selectPoint(pointId) {
+    async selectPoint(pointId) {
         // 前回選択されたマーカーの色をリセット
         if (this.selectedMarker) {
             this.selectedMarker.setStyle({
@@ -105,7 +105,35 @@ export class PointManager {
             const point = this.gpsDataManager.getPointById(pointId);
             if (point) {
                 this.updatePointInfoDisplay(point);
+                
+                // 経度・緯度から標高を取得してGPS標高に設定
+                await this.fetchAndUpdateElevation(point);
             }
+        }
+    }
+
+    // 標高を取得してGPS標高フィールドを更新
+    async fetchAndUpdateElevation(point) {
+        try {
+            // GPS標高が既に設定されている場合はスキップ
+            if (point.gpsElevation && point.gpsElevation !== '') {
+                return;
+            }
+
+            const elevation = await this.gpsDataManager.fetchElevationFromAPI(point.lat, point.lng);
+            
+            if (elevation !== null) {
+                // GPS標高を更新
+                const updates = { gpsElevation: String(elevation) };
+                this.gpsDataManager.updatePoint(point.id, updates);
+                
+                // 表示も更新
+                document.getElementById('gpsElevationField').value = elevation;
+                
+                this.showMessage(`標高データを取得しました: ${elevation}m`);
+            }
+        } catch (error) {
+            console.warn('標高取得中にエラーが発生しました:', error);
         }
     }
 
