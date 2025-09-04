@@ -271,13 +271,19 @@ export class GPSDataManager {
                 const coords = feature.geometry.coordinates;
                 const properties = feature.properties || {};
                 
+                // GPS標高は座標配列の3番目の要素から取得（新形式）
+                // 旧形式との互換性も保持
+                const gpsElevation = coords.length >= 3 ? 
+                    String(coords[2] || '') : 
+                    (properties.gpsElevation || properties['GPS標高'] || '');
+                
                 const point = {
-                    id: properties.id || properties.name || `P${this.nextId++}`,
+                    id: properties.id || `P${this.nextId++}`,
                     lat: coords[1],
                     lng: coords[0],
                     elevation: properties.elevation || properties['標高'] || '',
-                    gpsElevation: properties.gpsElevation || properties['GPS標高'] || '',
-                    location: properties.location || properties['場所'] || properties['位置'] || ''
+                    gpsElevation: gpsElevation,
+                    location: properties.name || properties.location || properties['場所'] || properties['位置'] || ''
                 };
                 
                 if (!isNaN(point.lat) && !isNaN(point.lng)) {
@@ -295,19 +301,22 @@ export class GPSDataManager {
         
         const geojson = {
             type: 'FeatureCollection',
-            features: this.gpsPoints.map(point => ({
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: [point.lng, point.lat]
-                },
-                properties: {
-                    id: point.id,
-                    elevation: point.elevation,
-                    gpsElevation: point.gpsElevation,
-                    location: point.location
-                }
-            }))
+            features: this.gpsPoints.map(point => {
+                // GPS標高を数値として取得、空文字や無効な値の場合は0にする
+                const gpsElevation = parseFloat(point.gpsElevation) || 0;
+                
+                return {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [point.lng, point.lat, gpsElevation]
+                    },
+                    properties: {
+                        id: point.id,
+                        name: point.location
+                    }
+                };
+            })
         };
 
         return await this.fileHandler.saveGeoJSONWithUserChoice(geojson, filename);
