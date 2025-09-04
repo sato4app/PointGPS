@@ -1,39 +1,24 @@
 // GPSデータ管理クラス
 export class GPSDataManager {
-    constructor() {
+    constructor(fileHandler = null) {
         this.gpsPoints = [];
         this.nextId = 1;
+        this.fileHandler = fileHandler;
     }
 
     // Excelファイルを読み込む
     async loadExcelFile(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    // 最初のシートを取得
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    
-                    // JSONに変換
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    // データを解析してGPSポイントに変換
-                    this.parseExcelData(jsonData);
-                    
-                    resolve(this.gpsPoints.length);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            
-            reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
-            reader.readAsArrayBuffer(file);
-        });
+        if (!this.fileHandler) {
+            throw new Error('FileHandlerが設定されていません');
+        }
+        
+        try {
+            const jsonData = await this.fileHandler.loadExcelFile(file);
+            this.parseExcelData(jsonData);
+            return this.gpsPoints.length;
+        } catch (error) {
+            throw error;
+        }
     }
 
     // Excelデータを解析
@@ -210,7 +195,11 @@ export class GPSDataManager {
     }
 
     // Excelファイルとして出力
-    exportToExcel() {
+    async exportToExcel(filename = 'gps_points') {
+        if (!this.fileHandler) {
+            throw new Error('FileHandlerが設定されていません');
+        }
+        
         const data = [
             ['ID', '緯度', '経度', '標高', 'GPS標高', '場所'] // ヘッダー
         ];
@@ -226,31 +215,22 @@ export class GPSDataManager {
             ]);
         });
 
-        const worksheet = XLSX.utils.aoa_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
-        
-        XLSX.writeFile(workbook, 'gps_points.xlsx');
+        return await this.fileHandler.saveExcelWithUserChoice(data, filename);
     }
 
     // GeoJSONファイルを読み込む
     async loadGeoJSONFile(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                try {
-                    const jsonData = JSON.parse(e.target.result);
-                    this.parseGeoJSONData(jsonData);
-                    resolve(this.gpsPoints.length);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            
-            reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
-            reader.readAsText(file);
-        });
+        if (!this.fileHandler) {
+            throw new Error('FileHandlerが設定されていません');
+        }
+        
+        try {
+            const jsonData = await this.fileHandler.loadGeoJSONFile(file);
+            this.parseGeoJSONData(jsonData);
+            return this.gpsPoints.length;
+        } catch (error) {
+            throw error;
+        }
     }
 
     // GeoJSONデータを解析
@@ -288,7 +268,11 @@ export class GPSDataManager {
     }
 
     // GeoJSONとして出力
-    exportToGeoJSON() {
+    async exportToGeoJSON(filename = 'gps_points') {
+        if (!this.fileHandler) {
+            throw new Error('FileHandlerが設定されていません');
+        }
+        
         const geojson = {
             type: 'FeatureCollection',
             features: this.gpsPoints.map(point => ({
@@ -306,16 +290,6 @@ export class GPSDataManager {
             }))
         };
 
-        const dataStr = JSON.stringify(geojson, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'gps_points.geojson';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        return await this.fileHandler.saveGeoJSONWithUserChoice(geojson, filename);
     }
 }

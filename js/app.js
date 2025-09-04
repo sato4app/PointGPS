@@ -2,6 +2,7 @@
 import { MapManager } from './map-manager.js';
 import { GPSDataManager } from './gps-data-manager.js';
 import { PointManager } from './point-manager.js';
+import { FileHandler } from './file-handler.js';
 import { CONFIG } from './config.js';
 
 class PointGPSApp {
@@ -18,8 +19,11 @@ class PointGPSApp {
             // 地図管理初期化
             this.mapManager = new MapManager('map');
             
+            // ファイルハンドラー初期化
+            this.fileHandler = new FileHandler();
+            
             // GPSデータ管理初期化
-            this.gpsDataManager = new GPSDataManager();
+            this.gpsDataManager = new GPSDataManager(this.fileHandler);
             
             // ポイント管理初期化
             this.pointManager = new PointManager(this.mapManager, this.gpsDataManager);
@@ -101,20 +105,30 @@ class PointGPSApp {
         });
 
         // 出力ボタン
-        document.getElementById('exportExcelBtn').addEventListener('click', () => {
+        document.getElementById('exportExcelBtn').addEventListener('click', async () => {
             try {
-                this.gpsDataManager.exportToExcel();
-                this.showMessage(CONFIG.MESSAGES.EXPORT_SUCCESS);
+                const currentFileName = this.fileHandler.getCurrentFileName() || 'gps_points';
+                const result = await this.gpsDataManager.exportToExcel(currentFileName);
+                if (result.success) {
+                    this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
+                } else if (result.error !== 'キャンセル') {
+                    this.showError(`保存エラー: ${result.error}`);
+                }
             } catch (error) {
                 console.error('Excel出力エラー:', error);
                 this.showError(CONFIG.MESSAGES.EXPORT_ERROR);
             }
         });
 
-        document.getElementById('exportGeoJsonBtn').addEventListener('click', () => {
+        document.getElementById('exportGeoJsonBtn').addEventListener('click', async () => {
             try {
-                this.gpsDataManager.exportToGeoJSON();
-                this.showMessage(CONFIG.MESSAGES.EXPORT_SUCCESS);
+                const currentFileName = this.fileHandler.getCurrentFileName() || 'gps_points';
+                const result = await this.gpsDataManager.exportToGeoJSON(currentFileName);
+                if (result.success) {
+                    this.showMessage(`GeoJSONファイルを保存しました: ${result.filename}`);
+                } else if (result.error !== 'キャンセル') {
+                    this.showError(`保存エラー: ${result.error}`);
+                }
             } catch (error) {
                 console.error('GeoJSON出力エラー:', error);
                 this.showError(CONFIG.MESSAGES.EXPORT_ERROR);
