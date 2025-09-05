@@ -12,6 +12,11 @@ export class PointManager {
         this.isMovingPoint = false;
         this.appInstance = null; // アプリケーションインスタンスへの参照
         
+        // ドラッグ関連の状態
+        this.isDragging = false;
+        this.draggingMarker = null;
+        this.draggingPointId = null;
+        
         this.initEventHandlers();
     }
 
@@ -27,6 +32,20 @@ export class PointManager {
             if (this.isAddingPoint) {
                 this.addPointAtLocation(e.latlng);
                 this.setAddingMode(false);
+            }
+        });
+        
+        // 地図全体でのマウスイベント（ドラッグ用）
+        const map = this.mapManager.getMap();
+        map.on('mousemove', (e) => {
+            if (this.isDragging && this.draggingMarker) {
+                this.draggingMarker.setLatLng(e.latlng);
+            }
+        });
+        
+        map.on('mouseup', (e) => {
+            if (this.isDragging && this.draggingMarker) {
+                this.stopDragging();
             }
         });
     }
@@ -69,39 +88,11 @@ export class PointManager {
         });
 
         // 手動ドラッグ機能を実装
-        let isDragging = false;
-        let dragStartLatLng = null;
-        
         marker.on('mousedown', (e) => {
             if (this.isMovingPoint && this.selectedPointId === point.id) {
-                isDragging = true;
-                dragStartLatLng = e.latlng;
-                this.mapManager.getMap().dragging.disable();
+                this.startDragging(marker, point.id, e);
                 e.originalEvent.stopPropagation();
-            }
-        });
-        
-        marker.on('mousemove', (e) => {
-            if (isDragging && this.isMovingPoint && this.selectedPointId === point.id) {
-                marker.setLatLng(e.latlng);
-                e.originalEvent.stopPropagation();
-            }
-        });
-        
-        marker.on('mouseup', (e) => {
-            if (isDragging && this.isMovingPoint && this.selectedPointId === point.id) {
-                isDragging = false;
-                this.mapManager.getMap().dragging.enable();
-                
-                const newLatLng = marker.getLatLng();
-                this.updatePointPosition(point.id, newLatLng.lat, newLatLng.lng);
-                
-                // ドラッグ終了後に移動状態を解除
-                this.setMovingMode(false);
-                if (this.appInstance && this.appInstance.resetMoveButtonColor) {
-                    this.appInstance.resetMoveButtonColor();
-                }
-                e.originalEvent.stopPropagation();
+                e.originalEvent.preventDefault();
             }
         });
 
@@ -332,6 +323,37 @@ export class PointManager {
         }
         
         return `${degrees}°${minutes}'${seconds}"${direction}`;
+    }
+
+    // ドラッグ開始
+    startDragging(marker, pointId, e) {
+        this.isDragging = true;
+        this.draggingMarker = marker;
+        this.draggingPointId = pointId;
+        this.mapManager.getMap().dragging.disable();
+        document.body.style.cursor = 'grabbing';
+    }
+    
+    // ドラッグ終了
+    stopDragging() {
+        if (this.isDragging && this.draggingMarker && this.draggingPointId) {
+            const newLatLng = this.draggingMarker.getLatLng();
+            this.updatePointPosition(this.draggingPointId, newLatLng.lat, newLatLng.lng);
+            
+            // 状態をリセット
+            this.isDragging = false;
+            this.draggingMarker = null;
+            this.draggingPointId = null;
+            this.mapManager.getMap().dragging.enable();
+            
+            // 移動モードを解除
+            this.setMovingMode(false);
+            if (this.appInstance && this.appInstance.resetMoveButtonColor) {
+                this.appInstance.resetMoveButtonColor();
+            }
+            
+            document.body.style.cursor = 'default';
+        }
     }
 
     // メッセージを表示
