@@ -87,6 +87,11 @@ class PointGPSApp {
 
         // ポイント操作ボタン
         document.getElementById('addPointBtn').addEventListener('click', () => {
+            // 移動モードが有効な場合は解除
+            if (this.pointManager.isMovingPoint) {
+                this.pointManager.setMovingMode(false);
+                this.resetMoveButtonColor();
+            }
             this.pointManager.setAddingMode(true);
             this.showMessage('地図上をクリックしてポイントを追加してください');
         });
@@ -103,6 +108,12 @@ class PointGPSApp {
         });
 
         document.getElementById('deletePointBtn').addEventListener('click', () => {
+            // 移動モードが有効な場合は解除
+            if (this.pointManager.isMovingPoint) {
+                this.pointManager.setMovingMode(false);
+                this.resetMoveButtonColor();
+            }
+            
             const selectedPointId = this.pointManager.selectedPointId;
             if (selectedPointId && confirm(`選択したポイント ${selectedPointId} を削除しますか？`)) {
                 this.pointManager.deleteSelectedPoint();

@@ -51,18 +51,49 @@ export class PointManager {
             color: CONFIG.POINT_MARKER_COLOR,
             weight: 2,
             opacity: 1,
-            fillOpacity: 0.6
+            fillOpacity: 0.6,
+            draggable: false
         }).addTo(this.mapManager.getMap());
 
         // マーカークリックイベント
-        marker.on('click', () => {
+        marker.on('click', (e) => {
+            if (this.isMovingPoint && this.selectedPointId !== point.id) {
+                // 移動モードで他のポイントをクリックした場合、移動モードを解除
+                this.setMovingMode(false);
+                if (this.appInstance && this.appInstance.resetMoveButtonColor) {
+                    this.appInstance.resetMoveButtonColor();
+                }
+            }
             this.selectPoint(point.id);
+            e.originalEvent.stopPropagation();
         });
 
-        // ドラッグ可能に設定
-        marker.on('dragend', (e) => {
+        // 手動ドラッグ機能を実装
+        let isDragging = false;
+        let dragStartLatLng = null;
+        
+        marker.on('mousedown', (e) => {
             if (this.isMovingPoint && this.selectedPointId === point.id) {
-                const newLatLng = e.target.getLatLng();
+                isDragging = true;
+                dragStartLatLng = e.latlng;
+                this.mapManager.getMap().dragging.disable();
+                e.originalEvent.stopPropagation();
+            }
+        });
+        
+        marker.on('mousemove', (e) => {
+            if (isDragging && this.isMovingPoint && this.selectedPointId === point.id) {
+                marker.setLatLng(e.latlng);
+                e.originalEvent.stopPropagation();
+            }
+        });
+        
+        marker.on('mouseup', (e) => {
+            if (isDragging && this.isMovingPoint && this.selectedPointId === point.id) {
+                isDragging = false;
+                this.mapManager.getMap().dragging.enable();
+                
+                const newLatLng = marker.getLatLng();
                 this.updatePointPosition(point.id, newLatLng.lat, newLatLng.lng);
                 
                 // ドラッグ終了後に移動状態を解除
@@ -70,6 +101,7 @@ export class PointManager {
                 if (this.appInstance && this.appInstance.resetMoveButtonColor) {
                     this.appInstance.resetMoveButtonColor();
                 }
+                e.originalEvent.stopPropagation();
             }
         });
 
@@ -204,16 +236,22 @@ export class PointManager {
     setMovingMode(enabled) {
         this.isMovingPoint = enabled;
         
-        // すべてのマーカーのドラッグ可能状態を更新
-        this.markers.forEach(marker => {
-            if (enabled) {
-                marker.options.draggable = true;
-                marker.dragging.enable();
-            } else {
-                marker.options.draggable = false;
-                marker.dragging.disable();
+        // 選択されたマーカーのみドラッグ可能状態を更新
+        if (enabled && this.selectedMarker) {
+            // 選択されたマーカーをドラッグ可能にする
+            this.selectedMarker.options.draggable = true;
+            if (this.selectedMarker.dragging) {
+                this.selectedMarker.dragging.enable();
             }
-        });
+        } else if (!enabled) {
+            // すべてのマーカーのドラッグを無効にする
+            this.markers.forEach(marker => {
+                marker.options.draggable = false;
+                if (marker.dragging) {
+                    marker.dragging.disable();
+                }
+            });
+        }
         
         document.body.style.cursor = enabled ? 'move' : 'default';
     }
