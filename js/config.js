@@ -13,6 +13,9 @@ export const CONFIG = {
     POINT_MARKER_RADIUS: 6,
     SELECTED_POINT_COLOR: '#00ff00',
     
+    // UI色設定
+    MOVE_BUTTON_ACTIVE_COLOR: '#32cd32',
+    
     // ファイルタイプ
     ACCEPTED_EXCEL_EXTENSIONS: ['.xlsx'],
     

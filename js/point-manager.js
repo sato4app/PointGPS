@@ -10,8 +10,14 @@ export class PointManager {
         this.selectedPointId = null;
         this.isAddingPoint = false;
         this.isMovingPoint = false;
+        this.appInstance = null; // アプリケーションインスタンスへの参照
         
         this.initEventHandlers();
+    }
+
+    // アプリケーションインスタンスを設定
+    setAppInstance(appInstance) {
+        this.appInstance = appInstance;
     }
 
     // イベントハンドラーを初期化
@@ -58,6 +64,12 @@ export class PointManager {
             if (this.isMovingPoint && this.selectedPointId === point.id) {
                 const newLatLng = e.target.getLatLng();
                 this.updatePointPosition(point.id, newLatLng.lat, newLatLng.lng);
+                
+                // ドラッグ終了後に移動状態を解除
+                this.setMovingMode(false);
+                if (this.appInstance && this.appInstance.resetMoveButtonColor) {
+                    this.appInstance.resetMoveButtonColor();
+                }
             }
         });
 

@@ -28,6 +28,7 @@ class PointGPSApp {
             
             // ポイント管理初期化
             this.pointManager = new PointManager(this.mapManager, this.gpsDataManager);
+            this.pointManager.setAppInstance(this);
             
             // イベントハンドラー設定
             this.setupEventHandlers();
@@ -92,6 +93,8 @@ class PointGPSApp {
 
         document.getElementById('movePointBtn').addEventListener('click', () => {
             if (this.pointManager.selectedPointId) {
+                const moveBtn = document.getElementById('movePointBtn');
+                moveBtn.style.backgroundColor = CONFIG.MOVE_BUTTON_ACTIVE_COLOR;
                 this.pointManager.setMovingMode(true);
                 this.showMessage('ポイントをドラッグして移動してください');
             } else {
@@ -175,6 +178,7 @@ class PointGPSApp {
             if (e.key === 'Escape') {
                 this.pointManager.setAddingMode(false);
                 this.pointManager.setMovingMode(false);
+                this.resetMoveButtonColor();
                 this.showMessage('操作をキャンセルしました');
             }
         });
@@ -200,6 +204,12 @@ class PointGPSApp {
         setTimeout(() => {
             messageArea.style.display = 'none';
         }, CONFIG.MESSAGE_DISPLAY_DURATION * 2); // エラーは少し長く表示
+    }
+
+    // 移動ボタンの背景色をリセット
+    resetMoveButtonColor() {
+        const moveBtn = document.getElementById('movePointBtn');
+        moveBtn.style.backgroundColor = '';
     }
 }
 
