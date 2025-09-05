@@ -38,8 +38,10 @@ export class PointManager {
         // 地図全体でのマウスイベント（ドラッグ用）
         const map = this.mapManager.getMap();
         map.on('mousemove', (e) => {
-            if (this.isDragging && this.draggingMarker) {
+            if (this.isDragging && this.draggingMarker && this.draggingPointId === this.selectedPointId) {
                 this.draggingMarker.setLatLng(e.latlng);
+                // ドラッグ中にリアルタイムで座標情報を更新
+                this.updateCoordinateFieldsRealtime(e.latlng.lat, e.latlng.lng);
             }
         });
         
@@ -172,6 +174,26 @@ export class PointManager {
         }
     }
 
+    // ドラッグ後のGPS標高取得・更新（強制的に再取得）
+    async fetchAndUpdateElevationAfterDrag(pointId, lat, lng) {
+        try {
+            const elevation = await this.gpsDataManager.fetchElevationFromAPI(lat, lng);
+            
+            if (elevation !== null) {
+                // GPS標高を更新
+                const updates = { gpsElevation: String(elevation) };
+                this.gpsDataManager.updatePoint(pointId, updates);
+                
+                // 表示も更新（選択されているポイントの場合のみ）
+                if (this.selectedPointId === pointId) {
+                    document.getElementById('gpsElevationField').value = elevation;
+                }
+            }
+        } catch (error) {
+            console.warn('ドラッグ後の標高取得中にエラーが発生しました:', error);
+        }
+    }
+
     // ポイントの位置を更新
     updatePointPosition(pointId, lat, lng) {
         const point = this.gpsDataManager.updatePoint(pointId, { lat, lng });
@@ -259,6 +281,13 @@ export class PointManager {
         document.getElementById('locationField').value = point.location;
     }
 
+    // ドラッグ中のリアルタイム座標更新（緯度・経度・DMSのみ）
+    updateCoordinateFieldsRealtime(lat, lng) {
+        document.getElementById('latDecimalField').value = lat.toFixed(5);
+        document.getElementById('lngDecimalField').value = lng.toFixed(5);
+        document.getElementById('dmsField').value = this.formatDMSCoordinates(lng, lat);
+    }
+
     // ポイント情報表示をクリア
     clearPointInfoDisplay() {
         document.getElementById('pointIdField').value = '';
@@ -335,10 +364,13 @@ export class PointManager {
     }
     
     // ドラッグ終了
-    stopDragging() {
+    async stopDragging() {
         if (this.isDragging && this.draggingMarker && this.draggingPointId) {
             const newLatLng = this.draggingMarker.getLatLng();
             this.updatePointPosition(this.draggingPointId, newLatLng.lat, newLatLng.lng);
+            
+            // GPS標高を再取得して更新
+            await this.fetchAndUpdateElevationAfterDrag(this.draggingPointId, newLatLng.lat, newLatLng.lng);
             
             // 状態をリセット
             this.isDragging = false;
