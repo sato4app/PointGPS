@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="国土地理院地図上でGPSポイントの表示・編集・管理を行うWebアプリケーション">
+    <meta name="keywords" content="GPS, 地図, 国土地理院, ポイント編集">
+    <meta name="author" content="PointGPS">
+    <title>PointGPS - ポイント(GPS)編集アプリ</title>
+
+    <!-- セキュリティとパフォーマンスのためのメタタグ -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    
+    <!-- ファビコンのリクエストを抑制して404エラーを防ぐ -->
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+    <!-- 外部CDNリソースの事前接続でパフォーマンス向上 -->
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    
+    <!-- Leaflet.js の CSS と JS を読み込み -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+    <!-- SheetJS ライブラリを読み込み -->
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* PointGPS スタイルシート */
+
+        /* リセットとベース設定 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        /* 地図コンテナ */
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* アクセシビリティ - スクリーンリーダー用の隠しテキスト */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* オーバーレイコントロールパネル */
+        .overlay-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* エディターパネル */
+        .editor-panel {
+            padding: 20px;
+        }
+
+        .editor-panel h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        /* コントロールボタン */
+        .control-button {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .control-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .control-button:active {
+            transform: translateY(0);
+        }
+
+        /* データ読み込みボタン */
+        .import-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .import-button {
+            flex: 1;
+            padding: 8px 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .import-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .import-button:active {
+            transform: translateY(0);
+        }
+
+        /* 情報フィールドコンテナ */
+        .info-field-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 8px;
+        }
+
+        .info-field-container label {
+            font-weight: 500;
+            color: #34495e;
+            min-width: 60px;
+            font-size: 13px;
+        }
+
+        .info-field-container input[type="text"] {
+            padding: 6px 8px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 13px;
+            background-color: #ecf0f1;
+        }
+
+        /* 特定フィールドの幅設定 */
+        #pointCountField {
+            width: 48px;
+            flex: none;
+        }
+
+        #pointIdField {
+            width: 60px;
+            flex: none;
+        }
+
+        #latDecimalField,
+        #lngDecimalField {
+            width: 80px;
+            flex: none;
+        }
+
+        .unit-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            white-space: nowrap;
+        }
+
+        /* ポイント情報コンテナ */
+        .point-info-container {
+            margin-top: 20px;
+            padding: 16px;
+            background-color: rgba(236, 240, 241, 0.8);
+            border-radius: 6px;
+            border: 1px solid #d5dbdb;
+        }
+
+        .point-info-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* 情報フィールド行 */
+        .info-field-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+
+        .info-field-row label {
+            font-weight: 500;
+            color: #34495e;
+            min-width: 40px;
+            font-size: 12px;
+        }
+
+        .info-field-row input[type="text"] {
+            flex: 1;
+            padding: 5px 7px;
+            border: 1px solid #bdc3c7;
+            border-radius: 3px;
+            font-size: 12px;
+            min-width: 0;
+        }
+
+        .info-field-row input[readonly] {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        /* ポイント操作ボタン */
+        .point-action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            justify-content: space-between;
+        }
+
+        .point-action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .point-action-btn:hover {
+            background-color: #219a52;
+            transform: translateY(-1px);
+        }
+
+        .point-action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 出力ボタン */
+        .export-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .export-buttons .control-button {
+            flex: 1;
+            margin-bottom: 0;
+            background-color: #e67e22;
+        }
+
+        .export-buttons .control-button:hover {
+            background-color: #d35400;
+        }
+
+        /* メッセージエリア */
+        .message-area {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 16px 24px;
+            border-radius: 6px;
+            font-weight: 500;
+            z-index: 10000;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .message-info {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            .overlay-controls {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+            }
+            
+            .editor-panel {
+                padding: 16px;
+            }
+            
+            .point-action-buttons {
+                flex-direction: column;
+            }
+            
+            .point-action-btn {
+                margin-bottom: 8px;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .overlay-controls {
+                top: 5px;
+                right: 5px;
+                left: 5px;
+            }
+            
+            .editor-panel {
+                padding: 12px;
+            }
+            
+            .info-field-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .info-field-row label {
+                min-width: auto;
+                margin-bottom: 4px;
+            }
+        }
+
+        /* カスタムカーソル */
+        body.crosshair-cursor {
+            cursor: crosshair;
+        }
+
+        body.move-cursor {
+            cursor: move;
+        }
+
+        /* アニメーション */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-area {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Leaflet カスタマイズ */
+        .leaflet-popup-content-wrapper {
+            border-radius: 6px;
+        }
+
+        .leaflet-popup-content {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        /* フォーカススタイル（アクセシビリティ向上） */
+        button:focus,
+        input:focus,
+        select:focus {
+            outline: 2px solid #3498db;
+            outline-offset: 2px;
+        }
+
+        /* ローディング状態の表示 */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid #3498db;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Leafletコントロールのカスタマイズ */
+        /* ズームコントロールをスケールの上に配置 */
+        .leaflet-control-zoom {
+            margin-bottom: 10px !important;
+        }
+
+        .leaflet-control-scale {
+            margin-bottom: 10px !important;
+        }
+
+        /* ズームコントロールのスタイリング */
+        .leaflet-control-zoom a {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: #333 !important;
+            border: 1px solid rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background-color: #f4f4f4 !important;
+        }
+
+        /* スケールコントロールのスタイリング */
+        .leaflet-control-scale-line {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 1px solid #777 !important;
+            color: #333 !important;
+            font-size: 11px !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- メイン地図コンテナ -->
+    <main id="map" role="main" aria-label="国土地理院地図"></main>
+
+    <!-- アプリケーション制御パネル -->
+    <aside class="overlay-controls" role="complementary" aria-label="ポイント(GPS)編集ツール">
+        <!-- GPS ポイント編集パネル -->
+        <section id="pointGpsEditor" class="editor-panel" aria-labelledby="gps-editor-title">
+            <h2 id="gps-editor-title">ポイント(GPS)編集</h2>
+            
+            <!-- データ読み込みボタン -->
+            <div class="import-buttons">
+                <input type="file" id="gpsCsvInput" accept=".xlsx" aria-label="GPSデータExcelファイル選択" style="display: none;">
+                <button id="loadGpsBtn" 
+                        type="button" 
+                        aria-describedby="load-gps-help" 
+                        class="import-button">
+                    読込(Excel)
+                </button>
+                
+                <input type="file" id="geoJsonInput" accept=".geojson" aria-label="GeoJSONファイル選択" style="display: none;">
+                <button id="loadGeoJsonBtn" 
+                        type="button" 
+                        aria-describedby="load-geojson-help" 
+                        class="import-button">
+                    読込(GeoJSON)
+                </button>
+            </div>
+            <div id="load-gps-help" class="visually-hidden">ExcelファイルからGPS座標データを読み込みます</div>
+            <div id="load-geojson-help" class="visually-hidden">GeoJSONファイルからGPS座標データを読み込みます</div>
+            
+            <!-- ポイント数表示フィールド -->
+            <div class="info-field-container">
+                <label for="pointCountField">ポイント数</label>
+                <input type="text" id="pointCountField" readonly value="0" aria-describedby="point-count-help">
+                <span class="unit-label" aria-hidden="true">個</span>
+                <div id="point-count-help" class="visually-hidden">現在読み込まれているGPSポイントの数</div>
+            </div>
+            
+            <!-- ポイント(GPS)情報枠 -->
+            <div id="pointInfoContainer" class="point-info-container">
+                <h3 class="point-info-title">選択したポイントの位置(GPS)情報</h3>
+                
+                <!-- ポイントID -->
+                <div class="info-field-row">
+                    <label for="pointIdField">ポイントID</label>
+                    <input type="text" id="pointIdField" maxlength="5">
+                </div>
+                
+                <!-- 緯度 -->
+                <div class="info-field-row">
+                    <label for="latDecimalField">緯度</label>
+                    <input type="text" id="latDecimalField" readonly placeholder="10進数形式" maxlength="12" size="10">
+                </div>
+                
+                <!-- 経度 -->
+                <div class="info-field-row">
+                    <label for="lngDecimalField">経度</label>
+                    <input type="text" id="lngDecimalField" readonly placeholder="10進数形式" maxlength="13" size="11">
+                </div>
+                
+                <!-- DMS -->
+                <div class="info-field-row">
+                    <label for="dmsField">DMS</label>
+                    <input type="text" id="dmsField" readonly placeholder="DMS形式緯度/経度" maxlength="30" size="25">
+                </div>
+                
+                <!-- 標高 -->
+                <div class="info-field-row">
+                    <label for="elevationField">標高</label>
+                    <input type="text" id="elevationField" readonly maxlength="6" size="5">
+                    <span class="unit-label">m</span>
+                    <span class="unit-label">（</span>
+                    <input type="text" id="gpsElevationField" readonly placeholder="GPS" maxlength="3" size="3">
+                    <span class="unit-label">m）</span>
+                </div>
+                
+                <!-- 場所 -->
+                <div class="info-field-row">
+                    <label for="locationField">名称</label>
+                    <input type="text" id="locationField" placeholder="名称を表示" maxlength="20">
+                </div>
+                
+                <!-- ポイント操作ボタン -->
+                <div class="point-action-buttons">
+                    <button id="addPointBtn" class="point-action-btn" type="button">追加</button>
+                    <button id="movePointBtn" class="point-action-btn" type="button">移動</button>
+                    <button id="deletePointBtn" class="point-action-btn" type="button">削除</button>
+                </div>
+            </div>
+
+            <!-- データ出力ボタン -->
+            <div class="export-buttons">
+                <button id="exportExcelBtn" class="control-button" type="button">出力(Excel)</button>
+                <button id="exportGeoJsonBtn" class="control-button" type="button">出力(GeoJSON)</button>
+            </div>
+        </section>
+    </aside>
+
+    <!-- メッセージ表示エリア -->
+    <div id="messageArea" class="message-area" style="display: none;"></div>
+
+    <script>
+        // アプリケーション設定定数
+        const CONFIG = {
+            // 地図設定
+            MAP_CENTER: [34.853667, 135.472041], // 箕面大滝
+            MAP_ZOOM: 15,
+            
+            // 国土地理院タイル設定
+            GSI_TILE_URL: 'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+            GSI_ATTRIBUTION: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
+            
+            // ポイントマーカー設定
+            POINT_MARKER_COLOR: '#ff0000',
+            POINT_MARKER_RADIUS: 6,
+            SELECTED_POINT_COLOR: '#00ff00',
+            
+            // UI色設定
+            MOVE_BUTTON_ACTIVE_COLOR: '#32cd32',
+            
+            // ファイルタイプ
+            ACCEPTED_EXCEL_EXTENSIONS: ['.xlsx'],
+            
+            // UI設定
+            MESSAGE_DISPLAY_DURATION: 3000, // ms
+            
+            // エラーメッセージ
+            MESSAGES: {
+                EXCEL_LOAD_SUCCESS: 'Excelファイルを正常に読み込みました',
+                EXCEL_LOAD_ERROR: 'Excelファイルの読み込みに失敗しました',
+                POINT_ADDED: 'ポイントを追加しました',
+                POINT_MOVED: 'ポイントを移動しました',
+                POINT_DELETED: 'ポイントを削除しました',
+                NO_POINT_SELECTED: 'ポイントが選択されていません',
+                EXPORT_SUCCESS: 'ファイルを出力しました',
+                EXPORT_ERROR: 'ファイル出力に失敗しました'
+            }
+        };
+
+        /**
+         * バリデーション機能を提供するクラス
+         */
+        class Validators {
+            /**
+             * ポイントIDが「X-nn」形式（英大文字1桁-数字2桁）かどうかをチェック
+             * @param {string} value - 検証する値
+             * @returns {boolean} 有効な形式かどうか
+             */
+            static isValidPointIdFormat(value) {
+                if (!value || value.trim() === '') {
+                    return true;
+                }
+                
+                const validPattern = /^[A-Z]-\d{2}$/;
+                return validPattern.test(value);
+            }
+
+            /**
+             * ポイントIDを「X-nn」形式に自動修正する（漢字・カナは変換しない）
+             * @param {string} value - 修正する値
+             * @returns {string} 修正された値
+             */
+            static formatPointId(value) {
+                if (!value || typeof value !== 'string') {
+                    return value;
+                }
+                
+                const original = value.trim();
+                if (original === '') {
+                    return value;
+                }
+                
+                // 1. 全角英数字を半角に変換（英文字は大文字化）
+                let converted = this.convertFullWidthToHalfWidth(original);
+                
+                // 漢字・ひらがな・カタカナが含まれる場合は、全角英数字変換のみ実行してそのまま返す
+                if (/[ぁ-ん]|[ァ-ヶ]|[一-龯]/.test(converted)) {
+                    return converted;
+                }
+                
+                // 2. スペースを全角・半角とも削除
+                converted = converted.replace(/[\s　]/g, '');
+                
+                if (converted === '') {
+                    return original;
+                }
+                
+                // 3. 末尾が1桁の数字の場合のみ、左をゼロで埋める（例："1"→"01"）
+                // 最後の2文字が数字の場合は0パディングしない
+                const lastTwoDigitsPattern = /\d{2}$/;
+                const singleDigitEndPattern = /^(.*)(\d)$/;
+                const singleDigitEndMatch = converted.match(singleDigitEndPattern);
+                
+                if (singleDigitEndMatch && !singleDigitEndMatch[1].endsWith('-') && !lastTwoDigitsPattern.test(converted)) {
+                    // ハイフンの直後でなく、最後の2文字が数字でない場合のみパディング
+                    const prefix = singleDigitEndMatch[1];
+                    const digit = singleDigitEndMatch[2];
+                    converted = `${prefix}${digit.padStart(2, '0')}`;
+                }
+                
+                // 4. 末尾が2桁以内の数字で、全体が3文字までの場合、数字の前に"-"を付ける
+                if (converted.length <= 3 && !converted.includes('-')) {
+                    const shortPattern = /^([A-Z]+)(\d{1,2})$/;
+                    const shortMatch = converted.match(shortPattern);
+                    
+                    if (shortMatch) {
+                        const letters = shortMatch[1];
+                        let numbers = shortMatch[2];
+                        // 1桁の数字の場合は0パディング
+                        if (numbers.length === 1) {
+                            numbers = '0' + numbers;
+                        }
+                        return `${letters}-${numbers}`;
+                    }
+                }
+                
+                return converted;
+            }
+            
+            /**
+             * 全角英文字と全角数字、全角ハイフンを半角に変換する（英文字は大文字化）
+             * @param {string} str - 変換する文字列
+             * @returns {string} 変換後の文字列
+             */
+            static convertFullWidthToHalfWidth(str) {
+                return str.replace(/[Ａ-Ｚａ-ｚ０-９－−‐―]/g, function(char) {
+                    if (char >= 'Ａ' && char <= 'Ｚ') {
+                        return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
+                    }
+                    if (char >= 'ａ' && char <= 'ｚ') {
+                        const halfWidthChar = String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
+                        return halfWidthChar.toUpperCase();
+                    }
+                    if (char >= '０' && char <= '９') {
+                        return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
+                    }
+                    if (char === '－' || char === '−' || char === '‐' || char === '―') {
+                        return '-';
+                    }
+                    return char;
+                }).replace(/[a-z]/g, function(char) {
+                    // 半角小文字も大文字に変換
+                    return char.toUpperCase();
+                });
+            }
+
+            /**
+             * ファイルがExcel形式かどうかをチェック
+             * @param {File} file - チェックするファイル
+             * @returns {boolean} Excel形式かどうか
+             */
+            static isExcelFile(file) {
+                return file && file.name.toLowerCase().endsWith('.xlsx') && 
+                       file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            }
+
+            /**
+             * ファイルがGeoJSON形式かどうかをチェック
+             * @param {File} file - チェックするファイル
+             * @returns {boolean} GeoJSON形式かどうか
+             */
+            static isGeoJSONFile(file) {
+                const fileName = file.name.toLowerCase();
+                return fileName.endsWith('.geojson') && 
+                       (file.type === 'application/json' || file.type === '');
+            }
+
+            /**
+             * GeoJSONデータが有効かどうかをチェック
+             * @param {Object} data - チェックするGeoJSONデータ
+             * @returns {boolean} 有効なGeoJSONデータかどうか
+             */
+            static isValidGeoJSONData(data) {
+                return data && data.type === 'FeatureCollection' && 
+                       Array.isArray(data.features);
+            }
+
+            /**
+             * GPSポイントデータが有効かどうかをチェック
+             * @param {Object} point - GPSポイントデータ
+             * @returns {boolean} 有効なポイントデータかどうか
+             */
+            static isValidGPSPoint(point) {
+                return point && 
+                       typeof point.lat === 'number' && 
+                       typeof point.lng === 'number' && 
+                       !isNaN(point.lat) && 
+                       !isNaN(point.lng) &&
+                       point.lat >= -90 && point.lat <= 90 &&
+                       point.lng >= -180 && point.lng <= 180;
+            }
+        }
+
+        /**
+         * ファイル操作を管理するクラス
+         */
+        class FileHandler {
+            constructor() {
+                this.currentFileHandle = null;
+                this.currentFileName = '';
+            }
+
+            /**
+             * Excelファイルを選択・読み込み
+             * @returns {Promise<{file: File, fileName: string}>} 読み込み結果
+             */
+            async selectExcelFile() {
+                try {
+                    if ('showOpenFilePicker' in window) {
+                        const [fileHandle] = await window.showOpenFilePicker({
+                            types: [{
+                                description: 'Excel Files',
+                                accept: {
+                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+                                }
+                            }],
+                            multiple: false
+                        });
+                        
+                        this.currentFileHandle = fileHandle;
+                        const file = await fileHandle.getFile();
+                        
+                        if (!this.isExcelFile(file)) {
+                            throw new Error('Excelファイル(.xlsx)を選択してください');
+                        }
+                        
+                        this.currentFileName = file.name.replace(/\.xlsx$/i, '');
+                        
+                        return { file, fileName: this.currentFileName };
+                    } else {
+                        throw new Error('File System Access API not supported');
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        throw new Error('ファイル選択がキャンセルされました');
+                    }
+                    throw error;
+                }
+            }
+
+            /**
+             * 従来のinput要素からファイルを読み込み
+             * @param {File} file - ファイルオブジェクト
+             * @returns {Promise<{file: File, fileName: string}>} 読み込み結果
+             */
+            async loadFromInputFile(file) {
+                if (this.isExcelFile(file)) {
+                    this.currentFileName = file.name.replace(/\.xlsx$/i, '');
+                    return { file, fileName: this.currentFileName };
+                } else if (this.isGeoJSONFile(file)) {
+                    this.currentFileName = file.name.replace(/\.geojson$/i, '');
+                    return { file, fileName: this.currentFileName };
+                } else {
+                    throw new Error('サポートされたファイル形式(.xlsx, .geojson)を選択してください');
+                }
+            }
+
+            /**
+             * Excelファイルを読み込み・解析
+             * @param {File} file - Excelファイル
+             * @returns {Promise<Object>} Excel データ
+             */
+            async loadExcelFile(file) {
+                if (!this.isExcelFile(file)) {
+                    throw new Error('Excelファイル(.xlsx)を選択してください');
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            
+                            resolve(jsonData);
+                        } catch (error) {
+                            reject(new Error('Excelファイルの読み込みに失敗しました: ' + error.message));
+                        }
+                    };
+                    
+                    reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            /**
+             * GeoJSONファイルを読み込み・パース
+             * @param {File} file - GeoJSONファイル
+             * @returns {Promise<Object>} パース済みGeoJSONデータ
+             */
+            async loadGeoJSONFile(file) {
+                if (!this.isGeoJSONFile(file)) {
+                    throw new Error('GeoJSONファイル(.geojson)を選択してください');
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const jsonData = JSON.parse(e.target.result);
+                            resolve(jsonData);
+                        } catch (error) {
+                            reject(new Error('JSONファイルの形式が正しくありません'));
+                        }
+                    };
+                    reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+                    reader.readAsText(file);
+                });
+            }
+
+            /**
+             * GeoJSONデータをファイルとしてダウンロード
+             * @param {Object} data - GeoJSON data
+             * @param {string} filename - ファイル名
+             */
+            downloadGeoJSON(data, filename) {
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename.endsWith('.geojson') ? filename : filename + '.geojson';
+                document.body.appendChild(a);
+                a.click();
+                
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            /**
+             * ユーザーが場所を指定してGeoJSONファイルを保存
+             * @param {Object} data - GeoJSON data
+             * @param {string} defaultFilename - デフォルトファイル名
+             * @returns {Promise<{success: boolean, filename?: string, error?: string}>} 保存結果
+             */
+            async saveGeoJSONWithUserChoice(data, defaultFilename) {
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                
+                try {
+                    if ('showSaveFilePicker' in window) {
+                        let savePickerOptions = {
+                            suggestedName: defaultFilename.endsWith('.geojson') ? defaultFilename : defaultFilename + '.geojson',
+                            types: [{
+                                description: 'GeoJSON Files',
+                                accept: {
+                                    'application/json': ['.geojson']
+                                }
+                            }]
+                        };
+                        
+                        if (this.currentFileHandle) {
+                            try {
+                                const parentDirectoryHandle = await this.currentFileHandle.getParent();
+                                savePickerOptions.startIn = parentDirectoryHandle;
+                            } catch (error) {
+                                // 同じディレクトリの取得に失敗、デフォルトディレクトリを使用
+                            }
+                        }
+                        
+                        const fileHandle = await window.showSaveFilePicker(savePickerOptions);
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        
+                        return { success: true, filename: fileHandle.name };
+                    } else {
+                        this.downloadGeoJSON(data, defaultFilename);
+                        return { success: true, filename: defaultFilename };
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        return { success: false, error: 'キャンセル' };
+                    }
+                    
+                    try {
+                        this.downloadGeoJSON(data, defaultFilename);
+                        return { success: true, filename: defaultFilename };
+                    } catch (downloadError) {
+                        return { success: false, error: error.message };
+                    }
+                }
+            }
+
+            /**
+             * 現在のファイル名を取得
+             * @returns {string} ファイル名
+             */
+            getCurrentFileName() {
+                return this.currentFileName;
+            }
+            
+            /**
+             * 現在の日付をyyyymmdd形式で取得
+             * @returns {string} yyyymmdd形式の日付
+             */
+            getTodayString() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                return `${year}${month}${day}`;
+            }
+            
+            /**
+             * デフォルトファイル名を生成
+             * @returns {string} ポイントGPS-yyyymmdd
+             */
+            getDefaultFileName() {
+                return `ポイントGPS-${this.getTodayString()}`;
+            }
+
+            /**
+             * Excelファイルかどうかを判定
+             * @param {File} file - ファイル
+             * @returns {boolean} Excelファイルかどうか
+             */
+            isExcelFile(file) {
+                return file.name.toLowerCase().endsWith('.xlsx') && 
+                       file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            }
+
+            /**
+             * GeoJSONファイルかどうかを判定
+             * @param {File} file - ファイル
+             * @returns {boolean} GeoJSONファイルかどうか
+             */
+            isGeoJSONFile(file) {
+                const fileName = file.name.toLowerCase();
+                return fileName.endsWith('.geojson') && 
+                       (file.type === 'application/json' || file.type === '');
+            }
+
+            /**
+             * Excelデータをファイルとしてダウンロード
+             * @param {Array} data - Excelデータ配列
+             * @param {string} filename - ファイル名
+             */
+            downloadExcel(data, filename) {
+                const worksheet = XLSX.utils.aoa_to_sheet(data);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
+                
+                const finalFilename = filename.endsWith('.xlsx') ? filename : filename + '.xlsx';
+                XLSX.writeFile(workbook, finalFilename);
+            }
+
+            /**
+             * ユーザーが場所を指定してExcelファイルを保存
+             * @param {Array} data - Excelデータ配列
+             * @param {string} defaultFilename - デフォルトファイル名
+             * @returns {Promise<{success: boolean, filename?: string, error?: string}>} 保存結果
+             */
+            async saveExcelWithUserChoice(data, defaultFilename) {
+                const worksheet = XLSX.utils.aoa_to_sheet(data);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
+                
+                const excelData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([excelData], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                });
+                
+                try {
+                    if ('showSaveFilePicker' in window) {
+                        let savePickerOptions = {
+                            suggestedName: defaultFilename.endsWith('.xlsx') ? defaultFilename : defaultFilename + '.xlsx',
+                            types: [{
+                                description: 'Excel Files',
+                                accept: {
+                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+                                }
+                            }]
+                        };
+                        
+                        if (this.currentFileHandle) {
+                            try {
+                                const parentDirectoryHandle = await this.currentFileHandle.getParent();
+                                savePickerOptions.startIn = parentDirectoryHandle;
+                            } catch (error) {
+                                // 同じディレクトリの取得に失敗、デフォルトディレクトリを使用
+                            }
+                        }
+                        
+                        const fileHandle = await window.showSaveFilePicker(savePickerOptions);
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        
+                        return { success: true, filename: fileHandle.name };
+                    } else {
+                        this.downloadExcel(data, defaultFilename);
+                        return { success: true, filename: defaultFilename };
+                    }
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        return { success: false, error: 'キャンセル' };
+                    }
+                    
+                    try {
+                        this.downloadExcel(data, defaultFilename);
+                        return { success: true, filename: defaultFilename };
+                    } catch (downloadError) {
+                        return { success: false, error: error.message };
+                    }
+                }
+            }
+        }
+
+        // 地図管理クラス
+        class MapManager {
+            constructor(mapElementId) {
+                this.mapElementId = mapElementId;
+                this.map = null;
+                this.init();
+            }
+
+            init() {
+                // 地図初期化（デフォルトのコントロールを無効化）
+                this.map = L.map(this.mapElementId, {
+                    zoomControl: false
+                }).setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
+                
+                // 国土地理院タイルレイヤーを追加
+                L.tileLayer(CONFIG.GSI_TILE_URL, {
+                    attribution: CONFIG.GSI_ATTRIBUTION,
+                    maxZoom: 18
+                }).addTo(this.map);
+                
+                // スケールコントロールを右下に追加
+                L.control.scale({
+                    position: 'bottomright',
+                    metric: true,
+                    imperial: false
+                }).addTo(this.map);
+                
+                // ズームコントロールをスケールの上に配置
+                L.control.zoom({
+                    position: 'bottomright'
+                }).addTo(this.map);
+
+                console.log('地図を初期化しました');
+            }
+
+            getMap() {
+                return this.map;
+            }
+
+            // 地図の中心を指定座標に移動
+            setView(latlng, zoom = null) {
+                if (zoom !== null) {
+                    this.map.setView(latlng, zoom);
+                } else {
+                    this.map.setView(latlng);
+                }
+            }
+
+            // 地図上にクリックイベントを追加
+            onMapClick(callback) {
+                this.map.on('click', callback);
+            }
+
+            // 地図上のクリックイベントを削除
+            offMapClick(callback) {
+                this.map.off('click', callback);
+            }
+        }
+
+        // GPSデータ管理クラス
+        class GPSDataManager {
+            constructor(fileHandler = null) {
+                this.gpsPoints = [];
+                this.nextId = 1;
+                this.fileHandler = fileHandler;
+            }
+
+            // Excelファイルを読み込む
+            async loadExcelFile(file) {
+                if (!this.fileHandler) {
+                    throw new Error('FileHandlerが設定されていません');
+                }
+                
+                try {
+                    const jsonData = await this.fileHandler.loadExcelFile(file);
+                    this.parseExcelData(jsonData);
+                    return this.gpsPoints.length;
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            // Excelデータを解析
+            parseExcelData(jsonData) {
+                this.gpsPoints = [];
+                
+                if (jsonData.length < 2) {
+                    return;
+                }
+                
+                const headerRow = jsonData[0];
+                
+                // ヘッダー行から列のインデックスを特定
+                const columnIndexes = this.identifyColumns(headerRow);
+                
+                if (!columnIndexes.lat || !columnIndexes.lng) {
+                    return;
+                }
+                
+                // 2行目以降をデータとして処理
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    
+                    // 行に十分なデータがあるかチェック
+                    if (row.length === 0 || this.isEmptyRow(row)) {
+                        continue;
+                    }
+                    
+                    const point = {
+                        id: this.getCellValue(row, columnIndexes.id) || `P${this.nextId++}`,
+                        lat: this.parseLatLng(this.getCellValue(row, columnIndexes.lat)),
+                        lng: this.parseLatLng(this.getCellValue(row, columnIndexes.lng)),
+                        elevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.elevation)),
+                        gpsElevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.gpsElevation)),
+                        location: this.getCellValue(row, columnIndexes.location) || ''
+                    };
+                    
+                    if (!isNaN(point.lat) && !isNaN(point.lng)) {
+                        this.gpsPoints.push(point);
+                    }
+                }
+            }
+
+            // ヘッダー行から各列のインデックスを特定
+            identifyColumns(headerRow) {
+                const indexes = {};
+                
+                for (let i = 0; i < headerRow.length; i++) {
+                    const header = String(headerRow[i]).trim();
+                    
+                    // ポイントID名: "ポイント"を含む
+                    if (header.includes('ポイント')) {
+                        indexes.id = i;
+                    }
+                    // 緯度: "緯度"と合致
+                    else if (header === '緯度') {
+                        indexes.lat = i;
+                    }
+                    // 経度: "経度"と合致
+                    else if (header === '経度') {
+                        indexes.lng = i;
+                    }
+                    // 標高: "標高"と合致
+                    else if (header === '標高') {
+                        indexes.elevation = i;
+                    }
+                    // 場所: "名称"、"位置"または"場所"を含む
+                    else if (header.includes('名称') || header.includes('位置') || header.includes('場所')) {
+                        indexes.location = i;
+                    }
+                }
+                
+                return indexes;
+            }
+
+            // セルの値を安全に取得
+            getCellValue(row, index) {
+                if (index === undefined || index >= row.length) {
+                    return '';
+                }
+                const value = row[index];
+                return value !== undefined && value !== null ? String(value).trim() : '';
+            }
+
+            // 空行かどうかをチェック
+            isEmptyRow(row) {
+                return row.every(cell => 
+                    cell === undefined || 
+                    cell === null || 
+                    String(cell).trim() === ''
+                );
+            }
+
+            // 緯度経度を10進数形式に変換
+            parseLatLng(value) {
+                if (typeof value === 'number') {
+                    return value;
+                }
+                
+                if (typeof value === 'string') {
+                    // DMS形式の場合の変換処理
+                    const dmsMatch = value.match(/(\d+)[°度]\s*(\d+)[\'分]\s*([\d.]+)[\"秒]/);
+                    if (dmsMatch) {
+                        const degrees = parseFloat(dmsMatch[1]);
+                        const minutes = parseFloat(dmsMatch[2]);
+                        const seconds = parseFloat(dmsMatch[3]);
+                        return degrees + minutes / 60 + seconds / 3600;
+                    }
+                    
+                    // 通常の数値文字列として解析
+                    return parseFloat(value);
+                }
+                
+                return NaN;
+            }
+
+            // 10進数をDMS形式に変換
+            toDMS(decimal) {
+                const degrees = Math.floor(Math.abs(decimal));
+                const minutes = Math.floor((Math.abs(decimal) - degrees) * 60);
+                const seconds = ((Math.abs(decimal) - degrees - minutes / 60) * 3600).toFixed(2);
+                const direction = decimal >= 0 ? '' : '-';
+                return `${direction}${degrees}°${minutes}'${seconds}"`;
+            }
+
+            // 標高値を正規化（数値の場合は整数四捨五入、そうでなければそのまま）
+            normalizeElevation(elevation) {
+                if (!elevation || elevation === '') {
+                    return '';
+                }
+                
+                const numValue = parseFloat(elevation);
+                if (!isNaN(numValue)) {
+                    return String(Math.round(numValue));
+                }
+                
+                // 数値として扱えない場合はそのまま返す
+                return String(elevation);
+            }
+
+            // 国土地理院の標高APIから標高データを取得
+            async fetchElevationFromAPI(lat, lng) {
+                try {
+                    const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('標高APIへのアクセスに失敗しました');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.elevation !== null && data.elevation !== undefined) {
+                        // 標高データを整数四捨五入
+                        return Math.round(parseFloat(data.elevation));
+                    }
+                    
+                    return null;
+                } catch (error) {
+                    console.warn('標高取得エラー:', error);
+                    return null;
+                }
+            }
+
+            // ポイントを追加
+            addPoint(lat, lng, id = null, elevation = '', gpsElevation = '', location = '') {
+                const point = {
+                    id: id || this.generateTemporaryId(),
+                    lat: lat,
+                    lng: lng,
+                    elevation: this.normalizeElevation(elevation),
+                    gpsElevation: this.normalizeElevation(gpsElevation),
+                    location: location
+                };
+                
+                this.gpsPoints.push(point);
+                return point;
+            }
+            
+            // 仮IDを生成（仮01から始まる連番）
+            generateTemporaryId() {
+                const existingTempIds = this.gpsPoints
+                    .map(p => p.id)
+                    .filter(id => id.match(/^仮\d{2}$/))
+                    .map(id => parseInt(id.substring(1)))
+                    .sort((a, b) => a - b);
+                
+                let nextNum = 1;
+                for (const num of existingTempIds) {
+                    if (num === nextNum) {
+                        nextNum++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                return `仮${nextNum.toString().padStart(2, '0')}`;
+            }
+
+            // ポイントを更新
+            updatePoint(pointId, updates) {
+                const index = this.gpsPoints.findIndex(p => p.id === pointId);
+                if (index !== -1) {
+                    // 標高データがある場合は正規化
+                    if ('elevation' in updates) {
+                        updates.elevation = this.normalizeElevation(updates.elevation);
+                    }
+                    if ('gpsElevation' in updates) {
+                        updates.gpsElevation = this.normalizeElevation(updates.gpsElevation);
+                    }
+                    
+                    Object.assign(this.gpsPoints[index], updates);
+                    return this.gpsPoints[index];
+                }
+                return null;
+            }
+
+            // ポイントを削除
+            removePoint(pointId) {
+                const index = this.gpsPoints.findIndex(p => p.id === pointId);
+                if (index !== -1) {
+                    const removedPoint = this.gpsPoints.splice(index, 1)[0];
+                    return removedPoint;
+                }
+                return null;
+            }
+
+            // すべてのポイントを取得
+            getAllPoints() {
+                return [...this.gpsPoints];
+            }
+
+            // ポイント数を取得
+            getPointCount() {
+                return this.gpsPoints.length;
+            }
+
+            // IDでポイントを検索
+            getPointById(id) {
+                return this.gpsPoints.find(p => p.id === id);
+            }
+
+            // Excelファイルとして出力
+            async exportToExcel(filename = 'gps_points') {
+                if (!this.fileHandler) {
+                    throw new Error('FileHandlerが設定されていません');
+                }
+                
+                const data = [
+                    ['ID', '緯度', '経度', '標高', 'GPS標高', '場所'] // ヘッダー
+                ];
+
+                this.gpsPoints.forEach(point => {
+                    data.push([
+                        point.id,
+                        point.lat,
+                        point.lng,
+                        point.elevation,
+                        point.gpsElevation,
+                        point.location
+                    ]);
+                });
+
+                return await this.fileHandler.saveExcelWithUserChoice(data, filename);
+            }
+
+            // GeoJSONファイルを読み込む
+            async loadGeoJSONFile(file) {
+                if (!this.fileHandler) {
+                    throw new Error('FileHandlerが設定されていません');
+                }
+                
+                try {
+                    const jsonData = await this.fileHandler.loadGeoJSONFile(file);
+                    this.parseGeoJSONData(jsonData);
+                    return this.gpsPoints.length;
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            // GeoJSONデータを解析
+            parseGeoJSONData(geojsonData) {
+                this.gpsPoints = [];
+                
+                if (geojsonData.type !== 'FeatureCollection' || !Array.isArray(geojsonData.features)) {
+                    throw new Error('無効なGeoJSON形式です');
+                }
+                
+                geojsonData.features.forEach((feature, index) => {
+                    if (feature.type === 'Feature' && 
+                        feature.geometry && 
+                        feature.geometry.type === 'Point' && 
+                        Array.isArray(feature.geometry.coordinates) &&
+                        feature.geometry.coordinates.length >= 2) {
+                        
+                        const coords = feature.geometry.coordinates;
+                        const properties = feature.properties || {};
+                        
+                        // 標高データは座標配列の3番目の要素から取得（新形式）
+                        // 旧形式との互換性も保持
+                        const elevation = coords.length >= 3 ? 
+                            String(coords[2] || '') : 
+                            (properties.elevation || properties['標高'] || '');
+                        
+                        const point = {
+                            id: properties.id || `P${this.nextId++}`,
+                            lat: coords[1],
+                            lng: coords[0],
+                            elevation: this.normalizeElevation(elevation),
+                            gpsElevation: this.normalizeElevation(properties.gpsElevation || properties['GPS標高'] || ''),
+                            location: properties.name || properties.location || properties['場所'] || properties['位置'] || ''
+                        };
+                        
+                        if (!isNaN(point.lat) && !isNaN(point.lng)) {
+                            this.gpsPoints.push(point);
+                        }
+                    }
+                });
+            }
+
+            // GeoJSONとして出力
+            async exportToGeoJSON(filename = 'gps_points') {
+                if (!this.fileHandler) {
+                    throw new Error('FileHandlerが設定されていません');
+                }
+                
+                const geojson = {
+                    type: 'FeatureCollection',
+                    features: this.gpsPoints.map(point => {
+                        // 標高データがある場合のみcoordinatesに追加（GPS標高を優先）
+                        const coordinates = [point.lng, point.lat];
+                        
+                        // GPS標高を優先、なければ標高を使用
+                        let elevationValue = null;
+                        if (point.gpsElevation && point.gpsElevation !== '') {
+                            elevationValue = parseFloat(point.gpsElevation);
+                        } else if (point.elevation && point.elevation !== '') {
+                            elevationValue = parseFloat(point.elevation);
+                        }
+                        
+                        // 標高データが存在し、有効な数値で、かつ正の値場合のみ追加
+                        if (!isNaN(elevationValue) && elevationValue > 0) {
+                            coordinates.push(Math.round(elevationValue));
+                        }
+                        
+                        return {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Point',
+                                coordinates: coordinates
+                            },
+                            properties: {
+                                id: point.id,
+                                name: point.location
+                            }
+                        };
+                    })
+                };
+
+                return await this.fileHandler.saveGeoJSONWithUserChoice(geojson, filename);
+            }
+        }
+
+        // ポイント表示・編集管理クラス
+        class PointManager {
+            constructor(mapManager, gpsDataManager) {
+                this.mapManager = mapManager;
+                this.gpsDataManager = gpsDataManager;
+                this.markers = new Map(); // pointId -> marker
+                this.selectedMarker = null;
+                this.selectedPointId = null;
+                this.isAddingPoint = false;
+                this.isMovingPoint = false;
+                this.appInstance = null; // アプリケーションインスタンスへの参照
+                
+                // ドラッグ関連の状態
+                this.isDragging = false;
+                this.draggingMarker = null;
+                this.draggingPointId = null;
+                
+                this.initEventHandlers();
+            }
+
+            // アプリケーションインスタンスを設定
+            setAppInstance(appInstance) {
+                this.appInstance = appInstance;
+            }
+
+            // イベントハンドラーを初期化
+            initEventHandlers() {
+                // 地図クリックでポイント追加モード時の処理
+                this.mapManager.onMapClick((e) => {
+                    if (this.isAddingPoint) {
+                        this.addPointAtLocation(e.latlng);
+                        this.setAddingMode(false);
+                    }
+                });
+                
+                // 地図全体でのマウスイベント（ドラッグ用）
+                const map = this.mapManager.getMap();
+                map.on('mousemove', (e) => {
+                    if (this.isDragging && this.draggingMarker && this.draggingPointId === this.selectedPointId) {
+                        this.draggingMarker.setLatLng(e.latlng);
+                        // ドラッグ中にリアルタイムで座標情報を更新
+                        this.updateCoordinateFieldsRealtime(e.latlng.lat, e.latlng.lng);
+                    }
+                });
+                
+                map.on('mouseup', (e) => {
+                    if (this.isDragging && this.draggingMarker) {
+                        this.stopDragging();
+                    }
+                });
+            }
+
+            // すべてのポイントを地図に表示
+            displayAllPoints() {
+                this.clearAllMarkers();
+                
+                const points = this.gpsDataManager.getAllPoints();
+                points.forEach(point => {
+                    this.addMarkerForPoint(point);
+                });
+
+                this.updatePointCountDisplay();
+            }
+
+            // 指定ポイントのマーカーを追加
+            addMarkerForPoint(point) {
+                const marker = L.circleMarker([point.lat, point.lng], {
+                    radius: CONFIG.POINT_MARKER_RADIUS,
+                    fillColor: CONFIG.POINT_MARKER_COLOR,
+                    color: CONFIG.POINT_MARKER_COLOR,
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.6,
+                    draggable: false
+                }).addTo(this.mapManager.getMap());
+
+                // マーカークリックイベント
+                marker.on('click', (e) => {
+                    if (this.isMovingPoint && this.selectedPointId !== point.id) {
+                        // 移動モードで他のポイントをクリックした場合、移動モードを解除
+                        this.setMovingMode(false);
+                        if (this.appInstance && this.appInstance.resetMoveButtonColor) {
+                            this.appInstance.resetMoveButtonColor();
+                        }
+                    }
+                    this.selectPoint(point.id);
+                    e.originalEvent.stopPropagation();
+                });
+
+                // 手動ドラッグ機能を実装
+                marker.on('mousedown', (e) => {
+                    if (this.isMovingPoint && this.selectedPointId === point.id) {
+                        this.startDragging(marker, point.id, e);
+                        e.originalEvent.stopPropagation();
+                        e.originalEvent.preventDefault();
+                    }
+                });
+
+                this.markers.set(point.id, marker);
+                
+                // ツールチップ表示
+                marker.bindTooltip(point.id, {
+                    permanent: false,
+                    direction: 'top',
+                    offset: [0, -10]
+                });
+            }
+
+            // 指定位置にポイントを追加
+            addPointAtLocation(latlng) {
+                const point = this.gpsDataManager.addPoint(latlng.lat, latlng.lng);
+                this.addMarkerForPoint(point);
+                this.selectPoint(point.id);
+                this.updatePointCountDisplay();
+                this.showMessage(CONFIG.MESSAGES.POINT_ADDED);
+            }
+
+            // ポイントを選択
+            async selectPoint(pointId) {
+                // 前回選択されたマーカーの色をリセット
+                if (this.selectedMarker) {
+                    this.selectedMarker.setStyle({
+                        fillColor: CONFIG.POINT_MARKER_COLOR,
+                        color: CONFIG.POINT_MARKER_COLOR
+                    });
+                }
+
+                // 新しいマーカーを選択
+                const marker = this.markers.get(pointId);
+                if (marker) {
+                    marker.setStyle({
+                        fillColor: CONFIG.SELECTED_POINT_COLOR,
+                        color: CONFIG.SELECTED_POINT_COLOR
+                    });
+                    
+                    this.selectedMarker = marker;
+                    this.selectedPointId = pointId;
+                    
+                    // ポイント情報を表示
+                    const point = this.gpsDataManager.getPointById(pointId);
+                    if (point) {
+                        this.updatePointInfoDisplay(point);
+                        
+                        // 経度・緯度から標高を取得してGPS標高に設定
+                        await this.fetchAndUpdateElevation(point);
+                    }
+                }
+            }
+
+            // 標高を取得してGPS標高フィールドを更新
+            async fetchAndUpdateElevation(point) {
+                try {
+                    // GPS標高が既に設定されている場合はスキップ
+                    if (point.gpsElevation && point.gpsElevation !== '') {
+                        return;
+                    }
+
+                    const elevation = await this.gpsDataManager.fetchElevationFromAPI(point.lat, point.lng);
+                    
+                    if (elevation !== null) {
+                        // GPS標高を更新
+                        const updates = { gpsElevation: String(elevation) };
+                        this.gpsDataManager.updatePoint(point.id, updates);
+                        
+                        // 表示も更新
+                        document.getElementById('gpsElevationField').value = elevation;
+                        
+                        // this.showMessage(`標高データを取得しました: ${elevation}m`);
+                    }
+                } catch (error) {
+                    console.warn('標高取得中にエラーが発生しました:', error);
+                }
+            }
+
+            // ドラッグ後のGPS標高取得・更新（強制的に再取得）
+            async fetchAndUpdateElevationAfterDrag(pointId, lat, lng) {
+                try {
+                    const elevation = await this.gpsDataManager.fetchElevationFromAPI(lat, lng);
+                    
+                    if (elevation !== null) {
+                        // GPS標高を更新
+                        const updates = { gpsElevation: String(elevation) };
+                        this.gpsDataManager.updatePoint(pointId, updates);
+                        
+                        // 表示も更新（選択されているポイントの場合のみ）
+                        if (this.selectedPointId === pointId) {
+                            document.getElementById('gpsElevationField').value = elevation;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('ドラッグ後の標高取得中にエラーが発生しました:', error);
+                }
+            }
+
+            // ポイントの位置を更新
+            updatePointPosition(pointId, lat, lng) {
+                const point = this.gpsDataManager.updatePoint(pointId, { lat, lng });
+                if (point) {
+                    this.updatePointInfoDisplay(point);
+                    this.showMessage(CONFIG.MESSAGES.POINT_MOVED);
+                }
+            }
+
+            // 選択されたポイントを削除
+            deleteSelectedPoint() {
+                if (!this.selectedPointId) {
+                    this.showMessage(CONFIG.MESSAGES.NO_POINT_SELECTED);
+                    return;
+                }
+
+                // マーカーを地図から削除
+                const marker = this.markers.get(this.selectedPointId);
+                if (marker) {
+                    this.mapManager.getMap().removeLayer(marker);
+                    this.markers.delete(this.selectedPointId);
+                }
+
+                // データから削除
+                this.gpsDataManager.removePoint(this.selectedPointId);
+                
+                // 選択状態をクリア
+                this.selectedMarker = null;
+                this.selectedPointId = null;
+                this.clearPointInfoDisplay();
+                
+                this.updatePointCountDisplay();
+                this.showMessage(CONFIG.MESSAGES.POINT_DELETED);
+            }
+
+            // 全マーカーを削除
+            clearAllMarkers() {
+                this.markers.forEach(marker => {
+                    this.mapManager.getMap().removeLayer(marker);
+                });
+                this.markers.clear();
+                this.selectedMarker = null;
+                this.selectedPointId = null;
+            }
+
+            // ポイント追加モードの設定
+            setAddingMode(enabled) {
+                this.isAddingPoint = enabled;
+                document.body.style.cursor = enabled ? 'crosshair' : 'default';
+            }
+
+            // ポイント移動モードの設定
+            setMovingMode(enabled) {
+                this.isMovingPoint = enabled;
+                
+                // 選択されたマーカーのみドラッグ可能状態を更新
+                if (enabled && this.selectedMarker) {
+                    // 選択されたマーカーをドラッグ可能にする
+                    this.selectedMarker.options.draggable = true;
+                    if (this.selectedMarker.dragging) {
+                        this.selectedMarker.dragging.enable();
+                    }
+                } else if (!enabled) {
+                    // すべてのマーカーのドラッグを無効にする
+                    this.markers.forEach(marker => {
+                        marker.options.draggable = false;
+                        if (marker.dragging) {
+                            marker.dragging.disable();
+                        }
+                    });
+                }
+                
+                document.body.style.cursor = enabled ? 'move' : 'default';
+            }
+
+            // ポイント情報表示を更新
+            updatePointInfoDisplay(point) {
+                document.getElementById('pointIdField').value = point.id;
+                document.getElementById('latDecimalField').value = point.lat.toFixed(5);
+                document.getElementById('lngDecimalField').value = point.lng.toFixed(5);
+                document.getElementById('dmsField').value = 
+                    this.formatDMSCoordinates(point.lng, point.lat);
+                document.getElementById('elevationField').value = point.elevation;
+                document.getElementById('gpsElevationField').value = point.gpsElevation;
+                document.getElementById('locationField').value = point.location;
+            }
+
+            // ドラッグ中のリアルタイム座標更新（緯度・経度・DMSのみ）
+            updateCoordinateFieldsRealtime(lat, lng) {
+                document.getElementById('latDecimalField').value = lat.toFixed(5);
+                document.getElementById('lngDecimalField').value = lng.toFixed(5);
+                document.getElementById('dmsField').value = this.formatDMSCoordinates(lng, lat);
+            }
+
+            // ポイント情報表示をクリア
+            clearPointInfoDisplay() {
+                document.getElementById('pointIdField').value = '';
+                document.getElementById('latDecimalField').value = '';
+                document.getElementById('lngDecimalField').value = '';
+                document.getElementById('dmsField').value = '';
+                document.getElementById('elevationField').value = '';
+                document.getElementById('gpsElevationField').value = '';
+                document.getElementById('locationField').value = '';
+            }
+
+            // ポイント数表示を更新
+            updatePointCountDisplay() {
+                const count = this.gpsDataManager.getPointCount();
+                document.getElementById('pointCountField').value = count;
+            }
+
+            // 選択されたポイントの情報を更新
+            updateSelectedPointInfo() {
+                if (!this.selectedPointId) return;
+
+                const updates = {
+                    id: document.getElementById('pointIdField').value,
+                    elevation: document.getElementById('elevationField').value,
+                    gpsElevation: document.getElementById('gpsElevationField').value,
+                    location: document.getElementById('locationField').value
+                };
+
+                this.gpsDataManager.updatePoint(this.selectedPointId, updates);
+                
+                // IDが変更された場合、マーカーのマップを更新
+                if (updates.id !== this.selectedPointId) {
+                    const marker = this.markers.get(this.selectedPointId);
+                    this.markers.delete(this.selectedPointId);
+                    this.markers.set(updates.id, marker);
+                    this.selectedPointId = updates.id;
+                    
+                    // ツールチップを更新
+                    marker.setTooltipContent(updates.id);
+                }
+            }
+
+            // DMS座標を「東経・北緯」順でE/N付きでフォーマット
+            formatDMSCoordinates(lng, lat) {
+                const lngDMS = this.toDMSWithDirection(lng, true);
+                const latDMS = this.toDMSWithDirection(lat, false);
+                return `${lngDMS} ${latDMS}`;
+            }
+            
+            // 10進数をDMS形式に変換（E/N方向付き）
+            toDMSWithDirection(decimal, isLongitude) {
+                const absDecimal = Math.abs(decimal);
+                const degrees = Math.floor(absDecimal);
+                const minutes = Math.floor((absDecimal - degrees) * 60);
+                const seconds = ((absDecimal - degrees - minutes / 60) * 3600).toFixed(2);
+                
+                let direction;
+                if (isLongitude) {
+                    direction = decimal >= 0 ? 'E' : 'W';
+                } else {
+                    direction = decimal >= 0 ? 'N' : 'S';
+                }
+                
+                return `${degrees}°${minutes}'${seconds}"${direction}`;
+            }
+
+            // ドラッグ開始
+            startDragging(marker, pointId, e) {
+                this.isDragging = true;
+                this.draggingMarker = marker;
+                this.draggingPointId = pointId;
+                this.mapManager.getMap().dragging.disable();
+                document.body.style.cursor = 'grabbing';
+            }
+            
+            // ドラッグ終了
+            async stopDragging() {
+                if (this.isDragging && this.draggingMarker && this.draggingPointId) {
+                    const newLatLng = this.draggingMarker.getLatLng();
+                    this.updatePointPosition(this.draggingPointId, newLatLng.lat, newLatLng.lng);
+                    
+                    // GPS標高を再取得して更新
+                    await this.fetchAndUpdateElevationAfterDrag(this.draggingPointId, newLatLng.lat, newLatLng.lng);
+                    
+                    // 状態をリセット
+                    this.isDragging = false;
+                    this.draggingMarker = null;
+                    this.draggingPointId = null;
+                    this.mapManager.getMap().dragging.enable();
+                    
+                    // 移動モードを解除
+                    this.setMovingMode(false);
+                    if (this.appInstance && this.appInstance.resetMoveButtonColor) {
+                        this.appInstance.resetMoveButtonColor();
+                    }
+                    
+                    document.body.style.cursor = 'default';
+                }
+            }
+
+            // メッセージを表示
+            showMessage(message) {
+                const messageArea = document.getElementById('messageArea');
+                messageArea.textContent = message;
+                messageArea.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageArea.style.display = 'none';
+                }, CONFIG.MESSAGE_DISPLAY_DURATION);
+            }
+        }
+
+        // メインアプリケーション
+        class PointGPSApp {
+            constructor() {
+                this.mapManager = null;
+                this.gpsDataManager = null;
+                this.pointManager = null;
+                
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // 地図管理初期化
+                    this.mapManager = new MapManager('map');
+                    
+                    // ファイルハンドラー初期化
+                    this.fileHandler = new FileHandler();
+                    
+                    // GPSデータ管理初期化
+                    this.gpsDataManager = new GPSDataManager(this.fileHandler);
+                    
+                    // ポイント管理初期化
+                    this.pointManager = new PointManager(this.mapManager, this.gpsDataManager);
+                    this.pointManager.setAppInstance(this);
+                    
+                    // イベントハンドラー設定
+                    this.setupEventHandlers();
+                    
+                    console.log('PointGPSアプリケーションを初期化しました');
+                } catch (error) {
+                    console.error('アプリケーション初期化エラー:', error);
+                    this.showError('アプリケーションの初期化中にエラーが発生しました');
+                }
+            }
+
+            setupEventHandlers() {
+                // GPS読み込みボタン
+                const loadGpsBtn = document.getElementById('loadGpsBtn');
+                const gpsCsvInput = document.getElementById('gpsCsvInput');
+                
+                loadGpsBtn.addEventListener('click', () => {
+                    gpsCsvInput.click();
+                });
+                
+                gpsCsvInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        try {
+                            const pointCount = await this.gpsDataManager.loadExcelFile(file);
+                            this.pointManager.displayAllPoints();
+                            this.showMessage(`${pointCount}個のポイントを読み込みました`);
+                        } catch (error) {
+                            console.error('Excel読み込みエラー:', error);
+                            this.showError(CONFIG.MESSAGES.EXCEL_LOAD_ERROR);
+                        }
+                    }
+                });
+
+                // GeoJSON読み込みボタン
+                const loadGeoJsonBtn = document.getElementById('loadGeoJsonBtn');
+                const geoJsonInput = document.getElementById('geoJsonInput');
+                
+                loadGeoJsonBtn.addEventListener('click', () => {
+                    geoJsonInput.click();
+                });
+                
+                geoJsonInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        try {
+                            const pointCount = await this.gpsDataManager.loadGeoJSONFile(file);
+                            this.pointManager.displayAllPoints();
+                            this.showMessage(`${pointCount}個のポイントを読み込みました`);
+                        } catch (error) {
+                            console.error('GeoJSON読み込みエラー:', error);
+                            this.showError('GeoJSONファイルの読み込みに失敗しました');
+                        }
+                    }
+                });
+
+                // ポイント操作ボタン
+                document.getElementById('addPointBtn').addEventListener('click', () => {
+                    // 移動モードが有効な場合は解除
+                    if (this.pointManager.isMovingPoint) {
+                        this.pointManager.setMovingMode(false);
+                        this.resetMoveButtonColor();
+                    }
+                    this.pointManager.setAddingMode(true);
+                    this.showMessage('地図上をクリックしてポイントを追加してください');
+                });
+
+                document.getElementById('movePointBtn').addEventListener('click', () => {
+                    if (this.pointManager.selectedPointId) {
+                        const moveBtn = document.getElementById('movePointBtn');
+                        moveBtn.style.backgroundColor = CONFIG.MOVE_BUTTON_ACTIVE_COLOR;
+                        this.pointManager.setMovingMode(true);
+                        this.showMessage('ポイントをドラッグして移動してください');
+                    } else {
+                        this.showMessage(CONFIG.MESSAGES.NO_POINT_SELECTED);
+                    }
+                });
+
+                document.getElementById('deletePointBtn').addEventListener('click', () => {
+                    // 移動モードが有効な場合は解除
+                    if (this.pointManager.isMovingPoint) {
+                        this.pointManager.setMovingMode(false);
+                        this.resetMoveButtonColor();
+                    }
+                    
+                    const selectedPointId = this.pointManager.selectedPointId;
+                    if (selectedPointId && confirm(`選択したポイント ${selectedPointId} を削除しますか？`)) {
+                        this.pointManager.deleteSelectedPoint();
+                    } else if (!selectedPointId) {
+                        this.pointManager.showMessage('削除するポイントが選択されていません');
+                    }
+                });
+
+                // 出力ボタン
+                document.getElementById('exportExcelBtn').addEventListener('click', async () => {
+                    try {
+                        const defaultFileName = this.fileHandler.getDefaultFileName();
+                        const result = await this.gpsDataManager.exportToExcel(defaultFileName);
+                        if (result.success) {
+                            this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
+                        } else if (result.error !== 'キャンセル') {
+                            this.showError(`保存エラー: ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error('Excel出力エラー:', error);
+                        this.showError(CONFIG.MESSAGES.EXPORT_ERROR);
+                    }
+                });
+
+                document.getElementById('exportGeoJsonBtn').addEventListener('click', async () => {
+                    try {
+                        const defaultFileName = this.fileHandler.getDefaultFileName();
+                        const result = await this.gpsDataManager.exportToGeoJSON(defaultFileName);
+                        if (result.success) {
+                            this.showMessage(`GeoJSONファイルを保存しました: ${result.filename}`);
+                        } else if (result.error !== 'キャンセル') {
+                            this.showError(`保存エラー: ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error('GeoJSON出力エラー:', error);
+                        this.showError(CONFIG.MESSAGES.EXPORT_ERROR);
+                    }
+                });
+
+                // ポイント情報フィールドの変更イベント
+                ['elevationField', 'gpsElevationField', 'locationField'].forEach(fieldId => {
+                    document.getElementById(fieldId).addEventListener('change', () => {
+                        this.pointManager.updateSelectedPointInfo();
+                    });
+                });
+                
+                // ポイントIDフィールドの特別処理（バリデーション付き）
+                const pointIdField = document.getElementById('pointIdField');
+                
+                // ポイントIDのblurイベント（フォーカスアウト時の処理）
+                pointIdField.addEventListener('blur', (e) => {
+                    const originalValue = e.target.value;
+                    const formattedValue = Validators.formatPointId(originalValue);
+                    
+                    if (originalValue !== formattedValue) {
+                        e.target.value = formattedValue;
+                        this.showMessage(`ポイントIDを「${formattedValue}」に修正しました`);
+                    }
+                    
+                    // 値が変更された場合のみ更新処理を実行
+                    if (originalValue !== e.target.value) {
+                        this.pointManager.updateSelectedPointInfo();
+                    }
+                });
+                
+                // ポイントIDのchangeイベント
+                pointIdField.addEventListener('change', () => {
+                    this.pointManager.updateSelectedPointInfo();
+                });
+
+                // ESCキーで各種モードを終了
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.pointManager.setAddingMode(false);
+                        this.pointManager.setMovingMode(false);
+                        this.resetMoveButtonColor();
+                        this.showMessage('操作をキャンセルしました');
+                    }
+                });
+            }
+
+            showMessage(message) {
+                const messageArea = document.getElementById('messageArea');
+                messageArea.textContent = message;
+                messageArea.className = 'message-area message-info';
+                messageArea.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageArea.style.display = 'none';
+                }, CONFIG.MESSAGE_DISPLAY_DURATION);
+            }
+
+            showError(message) {
+                const messageArea = document.getElementById('messageArea');
+                messageArea.textContent = message;
+                messageArea.className = 'message-area message-error';
+                messageArea.style.display = 'block';
+                
+                setTimeout(() => {
+                    messageArea.style.display = 'none';
+                }, CONFIG.MESSAGE_DISPLAY_DURATION * 2); // エラーは少し長く表示
+            }
+
+            // 移動ボタンの背景色をリセット
+            resetMoveButtonColor() {
+                const moveBtn = document.getElementById('movePointBtn');
+                moveBtn.style.backgroundColor = '';
+            }
+        }
+
+        // 初期化順序を明示的に管理
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Leafletが読み込まれているかチェック
+            if (typeof L === 'undefined') {
+                console.error('Leaflet.jsが読み込まれていません');
+                return;
+            }
+            
+            // 2. SheetJSが読み込まれているかチェック
+            if (typeof XLSX === 'undefined') {
+                console.error('SheetJS (xlsx)が読み込まれていません');
+                return;
+            }
+            
+            // 3. アプリケーション初期化
+            try {
+                new PointGPSApp();
+            } catch (error) {
+                console.error('アプリケーション初期化に失敗しました:', error);
+            }
+        });
+    </script>
+</body>
+</html>
