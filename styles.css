@@ -130,8 +130,8 @@ body {
 
 .file-type-radios {
     display: flex;
-    flex-direction: row;
-    gap: 12px;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .radio-option {
