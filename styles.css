@@ -287,7 +287,8 @@ body {
     margin-bottom: 0;
     background-color: #e67e22;
     flex-shrink: 0;
-    width: auto;
+    /* width: auto; */
+    width: 180px;
     padding: 8px 16px;
 }
 
