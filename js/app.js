@@ -121,33 +121,33 @@ class PointGPSApp {
             }
         });
 
-        // 出力ボタン
-        document.getElementById('exportExcelBtn').addEventListener('click', async () => {
+        // 統合された出力ボタン
+        const exportBtn = document.getElementById('exportBtn');
+        const exportExcelRadio = document.getElementById('exportExcelRadio');
+        const exportGeoJsonRadio = document.getElementById('exportGeoJsonRadio');
+        
+        exportBtn.addEventListener('click', async () => {
             try {
                 const defaultFileName = this.fileHandler.getDefaultFileName();
-                const result = await this.gpsDataManager.exportToExcel(defaultFileName);
-                if (result.success) {
-                    this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
-                } else if (result.error !== 'キャンセル') {
-                    this.showError(`保存エラー: ${result.error}`);
+                let result;
+                
+                if (exportExcelRadio.checked) {
+                    result = await this.gpsDataManager.exportToExcel(defaultFileName);
+                    if (result.success) {
+                        this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
+                    } else if (result.error !== 'キャンセル') {
+                        this.showError(`保存エラー: ${result.error}`);
+                    }
+                } else if (exportGeoJsonRadio.checked) {
+                    result = await this.gpsDataManager.exportToGeoJSON(defaultFileName);
+                    if (result.success) {
+                        this.showMessage(`GeoJSONファイルを保存しました: ${result.filename}`);
+                    } else if (result.error !== 'キャンセル') {
+                        this.showError(`保存エラー: ${result.error}`);
+                    }
                 }
             } catch (error) {
-                console.error('Excel出力エラー:', error);
-                this.showError(CONFIG.MESSAGES.EXPORT_ERROR);
-            }
-        });
-
-        document.getElementById('exportGeoJsonBtn').addEventListener('click', async () => {
-            try {
-                const defaultFileName = this.fileHandler.getDefaultFileName();
-                const result = await this.gpsDataManager.exportToGeoJSON(defaultFileName);
-                if (result.success) {
-                    this.showMessage(`GeoJSONファイルを保存しました: ${result.filename}`);
-                } else if (result.error !== 'キャンセル') {
-                    this.showError(`保存エラー: ${result.error}`);
-                }
-            } catch (error) {
-                console.error('GeoJSON出力エラー:', error);
+                console.error('ファイル出力エラー:', error);
                 this.showError(CONFIG.MESSAGES.EXPORT_ERROR);
             }
         });

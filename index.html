@@ -67,6 +67,7 @@
                 </div>
             </div>
             <div id="load-help" class="visually-hidden">選択したファイル形式でGPS座標データを読み込みます</div>
+            <div id="export-help" class="visually-hidden">選択したファイル形式でGPS座標データを出力します</div>
             
             <!-- ポイント数表示フィールド -->
             <div class="info-field-container">
@@ -130,8 +131,25 @@
 
             <!-- データ出力ボタン -->
             <div class="export-buttons">
-                <button id="exportExcelBtn" class="control-button" type="button">出力(Excel)</button>
-                <button id="exportGeoJsonBtn" class="control-button" type="button">出力(GeoJSON)</button>
+                <div class="export-control-row">
+                    <button id="exportBtn" 
+                            type="button" 
+                            aria-describedby="export-help" 
+                            class="control-button">
+                        ポイント出力
+                    </button>
+                    
+                    <div class="export-type-radios">
+                        <div class="radio-option">
+                            <input type="radio" id="exportExcelRadio" name="exportType" value="excel" checked>
+                            <label for="exportExcelRadio">Excel</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="exportGeoJsonRadio" name="exportType" value="geojson">
+                            <label for="exportGeoJsonRadio">GeoJSON</label>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </aside>
