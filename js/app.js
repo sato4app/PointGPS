@@ -41,12 +41,19 @@ class PointGPSApp {
     }
 
     setupEventHandlers() {
-        // GPS読み込みボタン
-        const loadGpsBtn = document.getElementById('loadGpsBtn');
+        // 統合された読み込みボタン
+        const loadBtn = document.getElementById('loadBtn');
+        const excelRadio = document.getElementById('excelRadio');
+        const geoJsonRadio = document.getElementById('geoJsonRadio');
         const gpsCsvInput = document.getElementById('gpsCsvInput');
+        const geoJsonInput = document.getElementById('geoJsonInput');
         
-        loadGpsBtn.addEventListener('click', () => {
-            gpsCsvInput.click();
+        loadBtn.addEventListener('click', () => {
+            if (excelRadio.checked) {
+                gpsCsvInput.click();
+            } else if (geoJsonRadio.checked) {
+                geoJsonInput.click();
+            }
         });
         
         gpsCsvInput.addEventListener('change', async (e) => {
@@ -63,14 +70,6 @@ class PointGPSApp {
             }
         });
 
-        // GeoJSON読み込みボタン
-        const loadGeoJsonBtn = document.getElementById('loadGeoJsonBtn');
-        const geoJsonInput = document.getElementById('geoJsonInput');
-        
-        loadGeoJsonBtn.addEventListener('click', () => {
-            geoJsonInput.click();
-        });
-        
         geoJsonInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {

@@ -95,14 +95,17 @@ body {
 
 /* データ読み込みボタン */
 .import-buttons {
-    display: flex;
-    gap: 8px;
     margin-bottom: 12px;
 }
 
+.import-control-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
 .import-button {
-    flex: 1;
-    padding: 8px 12px;
+    padding: 8px 16px;
     background-color: #3498db;
     color: white;
     border: none;
@@ -112,6 +115,7 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
+    flex-shrink: 0;
 }
 
 .import-button:hover {
@@ -122,6 +126,28 @@ body {
 
 .import-button:active {
     transform: translateY(0);
+}
+
+.file-type-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.radio-option input[type="radio"] {
+    margin: 0;
+}
+
+.radio-option label {
+    font-size: 13px;
+    color: #34495e;
+    cursor: pointer;
 }
 
 /* 情報フィールドコンテナ */

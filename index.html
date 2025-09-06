@@ -44,23 +44,29 @@
             <!-- データ読み込みボタン -->
             <div class="import-buttons">
                 <input type="file" id="gpsCsvInput" accept=".xlsx" aria-label="GPSデータExcelファイル選択" style="display: none;">
-                <button id="loadGpsBtn" 
-                        type="button" 
-                        aria-describedby="load-gps-help" 
-                        class="import-button">
-                    読込(Excel)
-                </button>
-                
                 <input type="file" id="geoJsonInput" accept=".geojson" aria-label="GeoJSONファイル選択" style="display: none;">
-                <button id="loadGeoJsonBtn" 
-                        type="button" 
-                        aria-describedby="load-geojson-help" 
-                        class="import-button">
-                    読込(GeoJSON)
-                </button>
+                
+                <div class="import-control-row">
+                    <button id="loadBtn" 
+                            type="button" 
+                            aria-describedby="load-help" 
+                            class="import-button">
+                        読み込み
+                    </button>
+                    
+                    <div class="file-type-radios">
+                        <div class="radio-option">
+                            <input type="radio" id="excelRadio" name="fileType" value="excel" checked>
+                            <label for="excelRadio">Excel</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="geoJsonRadio" name="fileType" value="geojson">
+                            <label for="geoJsonRadio">GeoJSON</label>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div id="load-gps-help" class="visually-hidden">ExcelファイルからGPS座標データを読み込みます</div>
-            <div id="load-geojson-help" class="visually-hidden">GeoJSONファイルからGPS座標データを読み込みます</div>
+            <div id="load-help" class="visually-hidden">選択したファイル形式でGPS座標データを読み込みます</div>
             
             <!-- ポイント数表示フィールド -->
             <div class="info-field-container">
