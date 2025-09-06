@@ -105,6 +105,7 @@ body {
 }
 
 .import-button {
+    width: 160px;
     padding: 8px 16px;
     background-color: #3498db;
     color: white;
@@ -284,10 +285,10 @@ body {
 }
 
 .export-buttons .control-button {
+    width: 160px;
     margin-bottom: 0;
     background-color: #e67e22;
     flex-shrink: 0;
-    width: auto;
     padding: 8px 16px;
 }
 
