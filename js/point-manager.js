@@ -128,7 +128,7 @@ export class PointManager {
                     pointIdField.setSelectionRange(0, pointIdField.value.length);
                 }, 10);
             }
-        }, 150);
+        }, 100);
     }
 
     // ポイントを選択
