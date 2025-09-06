@@ -28,9 +28,9 @@ export class PointManager {
     // イベントハンドラーを初期化
     initEventHandlers() {
         // 地図クリックでポイント追加モード時の処理
-        this.mapManager.onMapClick((e) => {
+        this.mapManager.onMapClick(async (e) => {
             if (this.isAddingPoint) {
-                this.addPointAtLocation(e.latlng);
+                await this.addPointAtLocation(e.latlng);
                 this.setAddingMode(false);
             }
         });
@@ -109,16 +109,30 @@ export class PointManager {
     }
 
     // 指定位置にポイントを追加
-    addPointAtLocation(latlng) {
+    async addPointAtLocation(latlng) {
         const point = this.gpsDataManager.addPoint(latlng.lat, latlng.lng);
         this.addMarkerForPoint(point);
-        this.selectPoint(point.id);
+        await this.selectPoint(point.id, true); // 新しいポイントフラグをtrueにする
         this.updatePointCountDisplay();
         this.showMessage(CONFIG.MESSAGES.POINT_ADDED);
+        
+        // すべての処理が完了してからポイントIDフィールドをフォーカス・全選択
+        setTimeout(() => {
+            const pointIdField = document.getElementById('pointIdField');
+            if (pointIdField && point.id.match(/^仮\d{2}$/)) {
+                pointIdField.focus();
+                pointIdField.select();
+                
+                // さらに確実にするため、setSelectionRangeも併用
+                setTimeout(() => {
+                    pointIdField.setSelectionRange(0, pointIdField.value.length);
+                }, 10);
+            }
+        }, 150);
     }
 
     // ポイントを選択
-    async selectPoint(pointId) {
+    async selectPoint(pointId, isNewPoint = false) {
         // 前回選択されたマーカーの色をリセット
         if (this.selectedMarker) {
             this.selectedMarker.setStyle({
@@ -141,7 +155,7 @@ export class PointManager {
             // ポイント情報を表示
             const point = this.gpsDataManager.getPointById(pointId);
             if (point) {
-                this.updatePointInfoDisplay(point);
+                this.updatePointInfoDisplay(point, isNewPoint);
                 
                 // 経度・緯度から標高を取得してGPS標高に設定
                 await this.fetchAndUpdateElevation(point);
@@ -270,8 +284,9 @@ export class PointManager {
     }
 
     // ポイント情報表示を更新
-    updatePointInfoDisplay(point) {
-        document.getElementById('pointIdField').value = point.id;
+    updatePointInfoDisplay(point, isNewPoint = false) {
+        const pointIdField = document.getElementById('pointIdField');
+        pointIdField.value = point.id;
         document.getElementById('latDecimalField').value = point.lat.toFixed(5);
         document.getElementById('lngDecimalField').value = point.lng.toFixed(5);
         document.getElementById('dmsField').value = 
@@ -279,6 +294,7 @@ export class PointManager {
         document.getElementById('elevationField').value = point.elevation;
         document.getElementById('gpsElevationField').value = point.gpsElevation;
         document.getElementById('locationField').value = point.location;
+        
     }
 
     // ドラッグ中のリアルタイム座標更新（緯度・経度・DMSのみ）
