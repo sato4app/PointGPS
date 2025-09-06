@@ -287,6 +287,8 @@ body {
     margin-bottom: 0;
     background-color: #e67e22;
     flex-shrink: 0;
+    width: auto;
+    padding: 8px 16px;
 }
 
 .export-buttons .control-button:hover {
