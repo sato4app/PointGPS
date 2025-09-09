@@ -53,8 +53,23 @@ export class GPSDataManager {
         // ヘッダー行から列のインデックスを特定
         const columnIndexes = this.identifyColumns(headerRow);
         
-        if (!columnIndexes.lat || !columnIndexes.lng) {
-            return;
+        // 必須項目（ポイントID、名称、緯度、経度）がすべて存在するかチェック
+        const requiredColumns = ['id', 'location', 'lat', 'lng'];
+        const missingColumns = requiredColumns.filter(col => 
+            columnIndexes[col] === undefined || columnIndexes[col] === null
+        );
+        
+        if (missingColumns.length > 0) {
+            const missingNames = missingColumns.map(col => {
+                switch(col) {
+                    case 'id': return 'ポイントID';
+                    case 'location': return '名称';
+                    case 'lat': return '緯度';
+                    case 'lng': return '経度';
+                    default: return col;
+                }
+            });
+            throw new Error(`必須項目が不足しています: ${missingNames.join(', ')}`);
         }
         
         // 2行目以降をデータとして処理
@@ -66,50 +81,62 @@ export class GPSDataManager {
                 continue;
             }
             
+            // 必須項目のデータを取得
+            const idValue = this.getCellValue(row, columnIndexes.id);
+            const locationValue = this.getCellValue(row, columnIndexes.location);
+            const latValue = this.getCellValue(row, columnIndexes.lat);
+            const lngValue = this.getCellValue(row, columnIndexes.lng);
+            
+            // 必須項目が空でないかチェック
+            if (!idValue || !locationValue || !latValue || !lngValue) {
+                continue; // 必須項目が欠けている行はスキップ
+            }
+            
+            const lat = this.parseLatLng(latValue);
+            const lng = this.parseLatLng(lngValue);
+            
+            // 緯度・経度が有効な数値かチェック
+            if (isNaN(lat) || isNaN(lng)) {
+                continue; // 無効な座標の行はスキップ
+            }
+            
             const point = {
-                id: this.getCellValue(row, columnIndexes.id) || `P${this.nextId++}`,
-                lat: this.parseLatLng(this.getCellValue(row, columnIndexes.lat)),
-                lng: this.parseLatLng(this.getCellValue(row, columnIndexes.lng)),
+                id: idValue,
+                lat: lat,
+                lng: lng,
                 elevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.elevation)),
-                location: this.getCellValue(row, columnIndexes.location) || '',
+                location: locationValue,
                 remarks: this.getCellValue(row, columnIndexes.remarks) || ''
             };
             
-            if (!isNaN(point.lat) && !isNaN(point.lng)) {
-                this.gpsPoints.push(point);
-            }
+            this.gpsPoints.push(point);
         }
     }
 
-    // ヘッダー行から各列のインデックスを特定
+    // ヘッダー行から各列のインデックスを特定（完全一致）
     identifyColumns(headerRow) {
         const indexes = {};
         
         for (let i = 0; i < headerRow.length; i++) {
             const header = String(headerRow[i]).trim();
             
-            // ポイントID名: "ポイント"を含む
-            if (header.includes('ポイント')) {
+            // 完全一致判定
+            if (header === 'ポイントID') {
                 indexes.id = i;
             }
-            // 緯度: "緯度"と合致
+            else if (header === '名称') {
+                indexes.location = i;
+            }
             else if (header === '緯度') {
                 indexes.lat = i;
             }
-            // 経度: "経度"と合致
             else if (header === '経度') {
                 indexes.lng = i;
             }
-            // 標高: "標高"と合致
             else if (header === '標高') {
                 indexes.elevation = i;
             }
-            // 場所: "名称"、"位置"または"場所"を含む
-            else if (header.includes('名称') || header.includes('位置') || header.includes('場所')) {
-                indexes.location = i;
-            }
-            // 備考: "備考"、"コメント"、"メモ"を含む
-            else if (header.includes('備考') || header.includes('コメント') || header.includes('メモ')) {
+            else if (header === '備考') {
                 indexes.remarks = i;
             }
         }
@@ -330,7 +357,7 @@ export class GPSDataManager {
         }
         
         const data = [
-            ['ID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
+            ['ポイントID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
         ];
 
         this.gpsPoints.forEach(point => {
