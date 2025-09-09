@@ -54,11 +54,8 @@ export class FileHandler {
         if (this.isExcelFile(file)) {
             this.currentFileName = file.name.replace(/\.xlsx$/i, '');
             return { file, fileName: this.currentFileName };
-        } else if (this.isGeoJSONFile(file)) {
-            this.currentFileName = file.name.replace(/\.geojson$/i, '');
-            return { file, fileName: this.currentFileName };
         } else {
-            throw new Error('サポートされたファイル形式(.xlsx, .geojson)を選択してください');
+            throw new Error('サポートされたファイル形式(.xlsx)を選択してください');
         }
     }
 
@@ -94,106 +91,6 @@ export class FileHandler {
             reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
             reader.readAsArrayBuffer(file);
         });
-    }
-
-    /**
-     * GeoJSONファイルを読み込み・パース
-     * @param {File} file - GeoJSONファイル
-     * @returns {Promise<Object>} パース済みGeoJSONデータ
-     */
-    async loadGeoJSONFile(file) {
-        if (!this.isGeoJSONFile(file)) {
-            throw new Error('GeoJSONファイル(.geojson)を選択してください');
-        }
-        
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const jsonData = JSON.parse(e.target.result);
-                    resolve(jsonData);
-                } catch (error) {
-                    reject(new Error('JSONファイルの形式が正しくありません'));
-                }
-            };
-            reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
-            reader.readAsText(file);
-        });
-    }
-
-    /**
-     * GeoJSONデータをファイルとしてダウンロード
-     * @param {Object} data - GeoJSON data
-     * @param {string} filename - ファイル名
-     */
-    downloadGeoJSON(data, filename) {
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename.endsWith('.geojson') ? filename : filename + '.geojson';
-        document.body.appendChild(a);
-        a.click();
-        
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    /**
-     * ユーザーが場所を指定してGeoJSONファイルを保存
-     * @param {Object} data - GeoJSON data
-     * @param {string} defaultFilename - デフォルトファイル名
-     * @returns {Promise<{success: boolean, filename?: string, error?: string}>} 保存結果
-     */
-    async saveGeoJSONWithUserChoice(data, defaultFilename) {
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        
-        try {
-            if ('showSaveFilePicker' in window) {
-                let savePickerOptions = {
-                    suggestedName: defaultFilename.endsWith('.geojson') ? defaultFilename : defaultFilename + '.geojson',
-                    types: [{
-                        description: 'GeoJSON Files',
-                        accept: {
-                            'application/json': ['.geojson']
-                        }
-                    }]
-                };
-                
-                if (this.currentFileHandle) {
-                    try {
-                        const parentDirectoryHandle = await this.currentFileHandle.getParent();
-                        savePickerOptions.startIn = parentDirectoryHandle;
-                    } catch (error) {
-                        // 同じディレクトリの取得に失敗、デフォルトディレクトリを使用
-                    }
-                }
-                
-                const fileHandle = await window.showSaveFilePicker(savePickerOptions);
-                const writable = await fileHandle.createWritable();
-                await writable.write(blob);
-                await writable.close();
-                
-                return { success: true, filename: fileHandle.name };
-            } else {
-                this.downloadGeoJSON(data, defaultFilename);
-                return { success: true, filename: defaultFilename };
-            }
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                return { success: false, error: 'キャンセル' };
-            }
-            
-            try {
-                this.downloadGeoJSON(data, defaultFilename);
-                return { success: true, filename: defaultFilename };
-            } catch (downloadError) {
-                return { success: false, error: error.message };
-            }
-        }
     }
 
     /**
@@ -234,16 +131,6 @@ export class FileHandler {
                file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     }
 
-    /**
-     * GeoJSONファイルかどうかを判定
-     * @param {File} file - ファイル
-     * @returns {boolean} GeoJSONファイルかどうか
-     */
-    isGeoJSONFile(file) {
-        const fileName = file.name.toLowerCase();
-        return fileName.endsWith('.geojson') && 
-               (file.type === 'application/json' || file.type === '');
-    }
 
     /**
      * Excelデータをファイルとしてダウンロード

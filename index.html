@@ -44,26 +44,15 @@
             <!-- データ読み込みボタン -->
             <div class="import-buttons">
                 <input type="file" id="gpsCsvInput" accept=".xlsx" aria-label="GPSデータExcelファイル選択" style="display: none;">
-                <input type="file" id="geoJsonInput" accept=".geojson" aria-label="GeoJSONファイル選択" style="display: none;">
                 
                 <div class="import-control-row">
                     <button id="loadBtn" 
                             type="button" 
                             aria-describedby="load-help" 
                             class="import-button">
-                        ポイント読み込み
+                        ポイント読み込み(Excel)
                     </button>
                     
-                    <div class="file-type-radios">
-                        <div class="radio-option">
-                            <input type="radio" id="excelRadio" name="fileType" value="excel" checked>
-                            <label for="excelRadio">Excel</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="geoJsonRadio" name="fileType" value="geojson">
-                            <label for="geoJsonRadio">GeoJSON</label>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div id="load-help" class="visually-hidden">選択したファイル形式でGPS座標データを読み込みます</div>
@@ -136,19 +125,9 @@
                             type="button" 
                             aria-describedby="export-help" 
                             class="control-button">
-                        ポイント出力
+                        ポイント出力(Excel)
                     </button>
                     
-                    <div class="export-type-radios">
-                        <div class="radio-option">
-                            <input type="radio" id="exportExcelRadio" name="exportType" value="excel" checked>
-                            <label for="exportExcelRadio">Excel</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="exportGeoJsonRadio" name="exportType" value="geojson">
-                            <label for="exportGeoJsonRadio">GeoJSON</label>
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>

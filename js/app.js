@@ -41,19 +41,12 @@ class PointGPSApp {
     }
 
     setupEventHandlers() {
-        // 統合された読み込みボタン
+        // Excel読み込みボタン
         const loadBtn = document.getElementById('loadBtn');
-        const excelRadio = document.getElementById('excelRadio');
-        const geoJsonRadio = document.getElementById('geoJsonRadio');
         const gpsCsvInput = document.getElementById('gpsCsvInput');
-        const geoJsonInput = document.getElementById('geoJsonInput');
         
         loadBtn.addEventListener('click', () => {
-            if (excelRadio.checked) {
-                gpsCsvInput.click();
-            } else if (geoJsonRadio.checked) {
-                geoJsonInput.click();
-            }
+            gpsCsvInput.click();
         });
         
         gpsCsvInput.addEventListener('change', async (e) => {
@@ -66,20 +59,6 @@ class PointGPSApp {
                 } catch (error) {
                     console.error('Excel読み込みエラー:', error);
                     this.showError(CONFIG.MESSAGES.EXCEL_LOAD_ERROR);
-                }
-            }
-        });
-
-        geoJsonInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                try {
-                    const pointCount = await this.gpsDataManager.loadGeoJSONFile(file);
-                    this.pointManager.displayAllPoints();
-                    this.showMessage(`${pointCount}個のポイントを読み込みました`);
-                } catch (error) {
-                    console.error('GeoJSON読み込みエラー:', error);
-                    this.showError('GeoJSONファイルの読み込みに失敗しました');
                 }
             }
         });
@@ -121,30 +100,18 @@ class PointGPSApp {
             }
         });
 
-        // 統合された出力ボタン
+        // Excel出力ボタン
         const exportBtn = document.getElementById('exportBtn');
-        const exportExcelRadio = document.getElementById('exportExcelRadio');
-        const exportGeoJsonRadio = document.getElementById('exportGeoJsonRadio');
         
         exportBtn.addEventListener('click', async () => {
             try {
                 const defaultFileName = this.fileHandler.getDefaultFileName();
-                let result;
+                const result = await this.gpsDataManager.exportToExcel(defaultFileName);
                 
-                if (exportExcelRadio.checked) {
-                    result = await this.gpsDataManager.exportToExcel(defaultFileName);
-                    if (result.success) {
-                        this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
-                    } else if (result.error !== 'キャンセル') {
-                        this.showError(`保存エラー: ${result.error}`);
-                    }
-                } else if (exportGeoJsonRadio.checked) {
-                    result = await this.gpsDataManager.exportToGeoJSON(defaultFileName);
-                    if (result.success) {
-                        this.showMessage(`GeoJSONファイルを保存しました: ${result.filename}`);
-                    } else if (result.error !== 'キャンセル') {
-                        this.showError(`保存エラー: ${result.error}`);
-                    }
+                if (result.success) {
+                    this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
+                } else if (result.error !== 'キャンセル') {
+                    this.showError(`保存エラー: ${result.error}`);
                 }
             } catch (error) {
                 console.error('ファイル出力エラー:', error);
