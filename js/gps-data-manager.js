@@ -361,12 +361,24 @@ export class GPSDataManager {
         ];
 
         this.gpsPoints.forEach(point => {
+            // 標高を数値として処理（小数点1位まで）
+            let elevationValue = '';
+            if (point.elevation && point.elevation !== '') {
+                const numElevation = parseFloat(point.elevation);
+                if (!isNaN(numElevation)) {
+                    const formatted = numElevation.toFixed(1);
+                    elevationValue = formatted.endsWith('.0') ? Math.round(numElevation) : parseFloat(formatted);
+                } else {
+                    elevationValue = point.elevation; // 数値でない場合はそのまま
+                }
+            }
+            
             data.push([
                 point.id,
                 point.location,
                 parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
                 parseFloat(point.lng.toFixed(5)), // 小数点以下5桁まで
-                point.elevation,
+                elevationValue,
                 point.remarks
             ]);
         });

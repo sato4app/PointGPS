@@ -179,7 +179,7 @@ export class FileHandler {
         this.setColumnWidths(worksheet, data);
         
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'ポイントGPS');
         
         const finalFilename = filename.endsWith('.xlsx') ? filename : filename + '.xlsx';
         XLSX.writeFile(workbook, finalFilename);
@@ -198,7 +198,7 @@ export class FileHandler {
         this.setColumnWidths(worksheet, data);
         
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'ポイントGPS');
         
         const excelData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([excelData], { 
