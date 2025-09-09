@@ -364,8 +364,8 @@ export class GPSDataManager {
             data.push([
                 point.id,
                 point.location,
-                point.lat,
-                point.lng,
+                parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
+                parseFloat(point.lng.toFixed(5)), // 小数点以下5桁まで
                 point.elevation,
                 point.remarks
             ]);
