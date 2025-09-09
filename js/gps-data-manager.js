@@ -16,18 +16,15 @@ export class GPSDataManager {
             const jsonData = await this.fileHandler.loadExcelFile(file);
             this.parseExcelData(jsonData);
             
-            // 標高が正の値でないポイントをAPIから取得（バックグラウンド処理）
-            this.fetchMissingElevations();
-            
             return this.gpsPoints.length;
         } catch (error) {
             throw error;
         }
     }
     
-    // 標高が正の値でないポイントの標高をAPIから取得
+    // 標高がblankまたは0のポイントの標高をAPIから取得
     async fetchMissingElevations() {
-        const pointsNeedingElevation = this.gpsPoints.filter(point => !this.isPositiveElevation(point.elevation));
+        const pointsNeedingElevation = this.gpsPoints.filter(point => this.needsElevationFromAPI(point.elevation));
         
         for (const point of pointsNeedingElevation) {
             try {
@@ -252,23 +249,27 @@ export class GPSDataManager {
         return point;
     }
     
-    // 標高が正の値かチェックする
-    isPositiveElevation(elevation) {
+    // 標高がblankまたは0かチェックする（APIから取得が必要かどうか）
+    needsElevationFromAPI(elevation) {
         if (!elevation || elevation === '') {
-            return false;
+            return true; // blank の場合
         }
         
         const numValue = parseFloat(elevation);
-        return !isNaN(numValue) && numValue > 0;
+        if (isNaN(numValue)) {
+            return false; // 数値でない場合はAPIから取得しない
+        }
+        
+        return numValue === 0; // 0 の場合のみAPIから取得
     }
     
-    // 標高を設定または更新（正の値でない場合はAPIから取得）
+    // 標高を設定または更新（blankまたは0の場合のみAPIから取得）
     async ensureValidElevation(pointId) {
         const point = this.getPointById(pointId);
         if (!point) return null;
         
-        // 既に正の標高値がある場合はそのまま
-        if (this.isPositiveElevation(point.elevation)) {
+        // API取得が必要でない場合はそのまま返す
+        if (!this.needsElevationFromAPI(point.elevation)) {
             return point.elevation;
         }
         
