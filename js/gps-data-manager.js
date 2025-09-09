@@ -71,7 +71,8 @@ export class GPSDataManager {
                 lat: this.parseLatLng(this.getCellValue(row, columnIndexes.lat)),
                 lng: this.parseLatLng(this.getCellValue(row, columnIndexes.lng)),
                 elevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.elevation)),
-                location: this.getCellValue(row, columnIndexes.location) || ''
+                location: this.getCellValue(row, columnIndexes.location) || '',
+                remarks: this.getCellValue(row, columnIndexes.remarks) || ''
             };
             
             if (!isNaN(point.lat) && !isNaN(point.lng)) {
@@ -106,6 +107,10 @@ export class GPSDataManager {
             // 場所: "名称"、"位置"または"場所"を含む
             else if (header.includes('名称') || header.includes('位置') || header.includes('場所')) {
                 indexes.location = i;
+            }
+            // 備考: "備考"、"コメント"、"メモ"を含む
+            else if (header.includes('備考') || header.includes('コメント') || header.includes('メモ')) {
+                indexes.remarks = i;
             }
         }
         
@@ -206,13 +211,14 @@ export class GPSDataManager {
     }
 
     // ポイントを追加
-    addPoint(lat, lng, id = null, elevation = '', location = '') {
+    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '') {
         const point = {
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
             elevation: this.normalizeElevation(elevation),
-            location: location
+            location: location,
+            remarks: remarks
         };
         
         this.gpsPoints.push(point);
@@ -324,17 +330,17 @@ export class GPSDataManager {
         }
         
         const data = [
-            ['ID', '緯度', '経度', '標高', 'GPS標高', '場所'] // ヘッダー
+            ['ID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
         ];
 
         this.gpsPoints.forEach(point => {
             data.push([
                 point.id,
+                point.location,
                 point.lat,
                 point.lng,
                 point.elevation,
-                point.gpsElevation,
-                point.location
+                point.remarks
             ]);
         });
 

@@ -285,6 +285,7 @@ export class PointManager {
             this.formatDMSCoordinates(point.lng, point.lat);
         document.getElementById('elevationField').value = point.elevation;
         document.getElementById('locationField').value = point.location;
+        document.getElementById('remarksField').value = point.remarks || '';
         
     }
 
@@ -303,6 +304,7 @@ export class PointManager {
         document.getElementById('dmsField').value = '';
         document.getElementById('elevationField').value = '';
         document.getElementById('locationField').value = '';
+        document.getElementById('remarksField').value = '';
     }
 
     // ポイント数表示を更新
@@ -318,7 +320,8 @@ export class PointManager {
         const updates = {
             id: document.getElementById('pointIdField').value,
             elevation: document.getElementById('elevationField').value,
-            location: document.getElementById('locationField').value
+            location: document.getElementById('locationField').value,
+            remarks: document.getElementById('remarksField').value
         };
 
         this.gpsDataManager.updatePoint(this.selectedPointId, updates);

@@ -105,7 +105,7 @@ body {
 }
 
 .import-button {
-    width: 144px;
+    width: 180px;
     padding: 8px 16px;
     background-color: #3498db;
     color: white;
@@ -180,7 +180,8 @@ body {
     flex: none;
 }
 
-#pointIdField {
+#pointIdField,
+#elevationField {
     width: 60px;
     flex: none;
 }
