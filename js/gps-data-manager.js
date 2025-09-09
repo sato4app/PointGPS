@@ -2,7 +2,6 @@
 export class GPSDataManager {
     constructor(fileHandler = null) {
         this.gpsPoints = [];
-        this.nextId = 1;
         this.fileHandler = fileHandler;
     }
 
@@ -22,20 +21,6 @@ export class GPSDataManager {
         }
     }
     
-    // 標高がblankまたは0のポイントの標高をAPIから取得
-    async fetchMissingElevations() {
-        const pointsNeedingElevation = this.gpsPoints.filter(point => this.needsElevationFromAPI(point.elevation));
-        
-        for (const point of pointsNeedingElevation) {
-            try {
-                await this.ensureValidElevation(point.id);
-                // 少し間隔を空けてAPI呼び出し
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } catch (error) {
-                console.warn(`ポイント ${point.id} の標高取得に失敗しました:`, error);
-            }
-        }
-    }
 
     // Excelデータを解析
     parseExcelData(jsonData) {
@@ -182,14 +167,6 @@ export class GPSDataManager {
         return NaN;
     }
 
-    // 10進数をDMS形式に変換
-    toDMS(decimal) {
-        const degrees = Math.floor(Math.abs(decimal));
-        const minutes = Math.floor((Math.abs(decimal) - degrees) * 60);
-        const seconds = ((Math.abs(decimal) - degrees - minutes / 60) * 3600).toFixed(2);
-        const direction = decimal >= 0 ? '' : '-';
-        return `${direction}${degrees}°${minutes}'${seconds}"`;
-    }
 
     // 標高値を正規化（数値の場合は小数点1位まで、123.0は123にする）
     normalizeElevation(elevation) {

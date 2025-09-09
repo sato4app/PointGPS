@@ -7,57 +7,7 @@ export class FileHandler {
         this.currentFileName = '';
     }
 
-    /**
-     * Excelファイルを選択・読み込み
-     * @returns {Promise<{file: File, fileName: string}>} 読み込み結果
-     */
-    async selectExcelFile() {
-        try {
-            if ('showOpenFilePicker' in window) {
-                const [fileHandle] = await window.showOpenFilePicker({
-                    types: [{
-                        description: 'Excel Files',
-                        accept: {
-                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-                        }
-                    }],
-                    multiple: false
-                });
-                
-                this.currentFileHandle = fileHandle;
-                const file = await fileHandle.getFile();
-                
-                if (!this.isExcelFile(file)) {
-                    throw new Error('Excelファイル(.xlsx)を選択してください');
-                }
-                
-                this.currentFileName = file.name.replace(/\.xlsx$/i, '');
-                
-                return { file, fileName: this.currentFileName };
-            } else {
-                throw new Error('File System Access API not supported');
-            }
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                throw new Error('ファイル選択がキャンセルされました');
-            }
-            throw error;
-        }
-    }
 
-    /**
-     * 従来のinput要素からファイルを読み込み
-     * @param {File} file - ファイルオブジェクト
-     * @returns {Promise<{file: File, fileName: string}>} 読み込み結果
-     */
-    async loadFromInputFile(file) {
-        if (this.isExcelFile(file)) {
-            this.currentFileName = file.name.replace(/\.xlsx$/i, '');
-            return { file, fileName: this.currentFileName };
-        } else {
-            throw new Error('サポートされたファイル形式(.xlsx)を選択してください');
-        }
-    }
 
     /**
      * Excelファイルを読み込み・解析
@@ -168,19 +118,27 @@ export class FileHandler {
 
 
     /**
-     * Excelデータをファイルとしてダウンロード
+     * Excelワークブックを作成
      * @param {Array} data - Excelデータ配列
-     * @param {string} filename - ファイル名
+     * @returns {Object} 作成されたワークブック
      */
-    downloadExcel(data, filename) {
+    createExcelWorkbook(data) {
         const worksheet = XLSX.utils.aoa_to_sheet(data);
-        
-        // 列幅を自動調整
         this.setColumnWidths(worksheet, data);
         
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'ポイントGPS');
         
+        return workbook;
+    }
+
+    /**
+     * Excelデータをファイルとしてダウンロード
+     * @param {Array} data - Excelデータ配列
+     * @param {string} filename - ファイル名
+     */
+    downloadExcel(data, filename) {
+        const workbook = this.createExcelWorkbook(data);
         const finalFilename = filename.endsWith('.xlsx') ? filename : filename + '.xlsx';
         XLSX.writeFile(workbook, finalFilename);
     }
@@ -192,14 +150,7 @@ export class FileHandler {
      * @returns {Promise<{success: boolean, filename?: string, error?: string}>} 保存結果
      */
     async saveExcelWithUserChoice(data, defaultFilename) {
-        const worksheet = XLSX.utils.aoa_to_sheet(data);
-        
-        // 列幅を自動調整
-        this.setColumnWidths(worksheet, data);
-        
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'ポイントGPS');
-        
+        const workbook = this.createExcelWorkbook(data);
         const excelData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
         const blob = new Blob([excelData], { 
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
