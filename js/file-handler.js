@@ -131,6 +131,41 @@ export class FileHandler {
                file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     }
 
+    /**
+     * ワークシートの列幅を自動調整
+     * @param {Object} worksheet - SheetJSワークシート
+     * @param {Array} data - データ配列
+     */
+    setColumnWidths(worksheet, data) {
+        if (!data || data.length === 0) return;
+        
+        // 各列の最大文字数を計算
+        const colWidths = [];
+        
+        data.forEach(row => {
+            row.forEach((cell, colIndex) => {
+                const cellValue = String(cell || '');
+                const cellLength = cellValue.length;
+                
+                // 日本語文字は幅を広く取る（1文字を2として計算）
+                const adjustedLength = cellValue.replace(/[^\x00-\xff]/g, 'xx').length;
+                
+                if (!colWidths[colIndex] || adjustedLength > colWidths[colIndex]) {
+                    colWidths[colIndex] = adjustedLength;
+                }
+            });
+        });
+        
+        // 最小幅と最大幅を設定
+        const minWidth = 8;  // 最小幅
+        const maxWidth = 50; // 最大幅
+        
+        // SheetJS用の列幅設定
+        worksheet['!cols'] = colWidths.map(width => ({
+            wch: Math.max(minWidth, Math.min(width + 2, maxWidth)) // +2はパディング
+        }));
+    }
+
 
     /**
      * Excelデータをファイルとしてダウンロード
@@ -139,6 +174,10 @@ export class FileHandler {
      */
     downloadExcel(data, filename) {
         const worksheet = XLSX.utils.aoa_to_sheet(data);
+        
+        // 列幅を自動調整
+        this.setColumnWidths(worksheet, data);
+        
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
         
@@ -154,6 +193,10 @@ export class FileHandler {
      */
     async saveExcelWithUserChoice(data, defaultFilename) {
         const worksheet = XLSX.utils.aoa_to_sheet(data);
+        
+        // 列幅を自動調整
+        this.setColumnWidths(worksheet, data);
+        
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'GPS_Points');
         
