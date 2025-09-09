@@ -129,27 +129,6 @@ body {
     transform: translateY(0);
 }
 
-.file-type-radios {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.radio-option {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.radio-option input[type="radio"] {
-    margin: 0;
-}
-
-.radio-option label {
-    font-size: 13px;
-    color: #34495e;
-    cursor: pointer;
-}
 
 /* 情報フィールドコンテナ */
 .info-field-container {
@@ -297,11 +276,6 @@ body {
     background-color: #d35400;
 }
 
-.export-type-radios {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
 
 /* メッセージエリア */
 .message-area {
