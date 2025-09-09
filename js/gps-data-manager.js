@@ -15,9 +15,28 @@ export class GPSDataManager {
         try {
             const jsonData = await this.fileHandler.loadExcelFile(file);
             this.parseExcelData(jsonData);
+            
+            // 標高が正の値でないポイントをAPIから取得（バックグラウンド処理）
+            this.fetchMissingElevations();
+            
             return this.gpsPoints.length;
         } catch (error) {
             throw error;
+        }
+    }
+    
+    // 標高が正の値でないポイントの標高をAPIから取得
+    async fetchMissingElevations() {
+        const pointsNeedingElevation = this.gpsPoints.filter(point => !this.isPositiveElevation(point.elevation));
+        
+        for (const point of pointsNeedingElevation) {
+            try {
+                await this.ensureValidElevation(point.id);
+                // 少し間隔を空けてAPI呼び出し
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+                console.warn(`ポイント ${point.id} の標高取得に失敗しました:`, error);
+            }
         }
     }
 
@@ -52,7 +71,6 @@ export class GPSDataManager {
                 lat: this.parseLatLng(this.getCellValue(row, columnIndexes.lat)),
                 lng: this.parseLatLng(this.getCellValue(row, columnIndexes.lng)),
                 elevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.elevation)),
-                gpsElevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.gpsElevation)),
                 location: this.getCellValue(row, columnIndexes.location) || ''
             };
             
@@ -144,7 +162,7 @@ export class GPSDataManager {
         return `${direction}${degrees}°${minutes}'${seconds}"`;
     }
 
-    // 標高値を正規化（数値の場合は整数四捨五入、そうでなければそのまま）
+    // 標高値を正規化（数値の場合は小数点1位まで、123.0は123にする）
     normalizeElevation(elevation) {
         if (!elevation || elevation === '') {
             return '';
@@ -152,7 +170,9 @@ export class GPSDataManager {
         
         const numValue = parseFloat(elevation);
         if (!isNaN(numValue)) {
-            return String(Math.round(numValue));
+            // 小数点1位まで表示し、.0の場合は整数表示
+            const formatted = numValue.toFixed(1);
+            return formatted.endsWith('.0') ? String(Math.round(numValue)) : formatted;
         }
         
         // 数値として扱えない場合はそのまま返す
@@ -172,8 +192,10 @@ export class GPSDataManager {
             const data = await response.json();
             
             if (data.elevation !== null && data.elevation !== undefined) {
-                // 標高データを整数四捨五入
-                return Math.round(parseFloat(data.elevation));
+                // 標高データを小数点1位まで、123.0は123にする
+                const elevation = parseFloat(data.elevation);
+                const formatted = elevation.toFixed(1);
+                return formatted.endsWith('.0') ? Math.round(elevation) : parseFloat(formatted);
             }
             
             return null;
@@ -184,18 +206,52 @@ export class GPSDataManager {
     }
 
     // ポイントを追加
-    addPoint(lat, lng, id = null, elevation = '', gpsElevation = '', location = '') {
+    addPoint(lat, lng, id = null, elevation = '', location = '') {
         const point = {
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
             elevation: this.normalizeElevation(elevation),
-            gpsElevation: this.normalizeElevation(gpsElevation),
             location: location
         };
         
         this.gpsPoints.push(point);
         return point;
+    }
+    
+    // 標高が正の値かチェックする
+    isPositiveElevation(elevation) {
+        if (!elevation || elevation === '') {
+            return false;
+        }
+        
+        const numValue = parseFloat(elevation);
+        return !isNaN(numValue) && numValue > 0;
+    }
+    
+    // 標高を設定または更新（正の値でない場合はAPIから取得）
+    async ensureValidElevation(pointId) {
+        const point = this.getPointById(pointId);
+        if (!point) return null;
+        
+        // 既に正の標高値がある場合はそのまま
+        if (this.isPositiveElevation(point.elevation)) {
+            return point.elevation;
+        }
+        
+        // APIから標高を取得
+        try {
+            const elevation = await this.fetchElevationFromAPI(point.lat, point.lng);
+            if (elevation !== null && elevation > 0) {
+                const formattedElevation = String(elevation);
+                this.updatePoint(pointId, { elevation: formattedElevation });
+                return formattedElevation;
+            }
+        } catch (error) {
+            console.warn('標高取得に失敗しました:', error);
+        }
+        
+        return point.elevation;
     }
     
     // 仮IDを生成（仮01から始まる連番）

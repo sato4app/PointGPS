@@ -116,6 +116,9 @@ export class PointManager {
         this.updatePointCountDisplay();
         this.showMessage(CONFIG.MESSAGES.POINT_ADDED);
         
+        // 標高をAPIから取得
+        await this.ensureElevationIfNeeded(point);
+        
         // すべての処理が完了してからポイントIDフィールドをフォーカス・全選択
         setTimeout(() => {
             const pointIdField = document.getElementById('pointIdField');
@@ -157,50 +160,39 @@ export class PointManager {
             if (point) {
                 this.updatePointInfoDisplay(point, isNewPoint);
                 
-                // 経度・緯度から標高を取得してGPS標高に設定
-                await this.fetchAndUpdateElevation(point);
+                // 標高が正の値でない場合は経度・緯度から標高を取得
+                await this.ensureElevationIfNeeded(point);
             }
         }
     }
 
-    // 標高を取得してGPS標高フィールドを更新
-    async fetchAndUpdateElevation(point) {
+    // 標高が正の値でない場合に経度・緯度から標高を取得
+    async ensureElevationIfNeeded(point) {
         try {
-            // GPS標高が既に設定されている場合はスキップ
-            if (point.gpsElevation && point.gpsElevation !== '') {
-                return;
-            }
-
-            const elevation = await this.gpsDataManager.fetchElevationFromAPI(point.lat, point.lng);
+            const updatedElevation = await this.gpsDataManager.ensureValidElevation(point.id);
             
-            if (elevation !== null) {
-                // GPS標高を更新
-                const updates = { gpsElevation: String(elevation) };
-                this.gpsDataManager.updatePoint(point.id, updates);
-                
-                // 表示も更新
-                document.getElementById('gpsElevationField').value = elevation;
-                
-                // this.showMessage(`標高データを取得しました: ${elevation}m`);
+            // 表示を更新
+            if (this.selectedPointId === point.id) {
+                document.getElementById('elevationField').value = updatedElevation;
             }
         } catch (error) {
             console.warn('標高取得中にエラーが発生しました:', error);
         }
     }
 
-    // ドラッグ後のGPS標高取得・更新（強制的に再取得）
+    // ドラッグ後の標高取得・更新（強制的に再取得）
     async fetchAndUpdateElevationAfterDrag(pointId, lat, lng) {
         try {
             const elevation = await this.gpsDataManager.fetchElevationFromAPI(lat, lng);
             
             if (elevation !== null) {
-                // GPS標高を更新
-                const updates = { gpsElevation: String(elevation) };
+                // 標高を更新
+                const updates = { elevation: String(elevation) };
                 this.gpsDataManager.updatePoint(pointId, updates);
                 
                 // 表示も更新（選択されているポイントの場合のみ）
                 if (this.selectedPointId === pointId) {
-                    document.getElementById('gpsElevationField').value = elevation;
+                    document.getElementById('elevationField').value = elevation;
                 }
             }
         } catch (error) {
@@ -292,7 +284,6 @@ export class PointManager {
         document.getElementById('dmsField').value = 
             this.formatDMSCoordinates(point.lng, point.lat);
         document.getElementById('elevationField').value = point.elevation;
-        document.getElementById('gpsElevationField').value = point.gpsElevation;
         document.getElementById('locationField').value = point.location;
         
     }
@@ -311,7 +302,6 @@ export class PointManager {
         document.getElementById('lngDecimalField').value = '';
         document.getElementById('dmsField').value = '';
         document.getElementById('elevationField').value = '';
-        document.getElementById('gpsElevationField').value = '';
         document.getElementById('locationField').value = '';
     }
 
@@ -328,7 +318,6 @@ export class PointManager {
         const updates = {
             id: document.getElementById('pointIdField').value,
             elevation: document.getElementById('elevationField').value,
-            gpsElevation: document.getElementById('gpsElevationField').value,
             location: document.getElementById('locationField').value
         };
 

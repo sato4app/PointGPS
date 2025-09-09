@@ -120,7 +120,7 @@ class PointGPSApp {
         });
 
         // ポイント情報フィールドの変更イベント
-        ['elevationField', 'gpsElevationField', 'locationField'].forEach(fieldId => {
+        ['locationField'].forEach(fieldId => {
             document.getElementById(fieldId).addEventListener('change', () => {
                 this.pointManager.updateSelectedPointInfo();
             });
