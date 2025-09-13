@@ -1,3 +1,5 @@
+import { CONFIG } from './config.js';
+
 /**
  * ファイル操作を管理するクラス
  */
@@ -10,7 +12,7 @@ export class FileHandler {
 
 
     /**
-     * Excelファイルを読み込み・解析
+     * Excelファイルを読み込み・解析（高速化版・行数制限付き）
      * @param {File} file - Excelファイル
      * @returns {Promise<Object>} Excel データ
      */
@@ -18,26 +20,41 @@ export class FileHandler {
         if (!this.isExcelFile(file)) {
             throw new Error('Excelファイル(.xlsx)を選択してください');
         }
-        
+
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    
+
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    
+
+                    // 読み込み行数を制限（SheetJSレベルで効率的に制限）
+                    const range = worksheet['!ref'];
+                    if (range) {
+                        const decoded = XLSX.utils.decode_range(range);
+                        const originalRows = decoded.e.r + 1; // 1ベースの行数
+
+                        // データ行数を制限（設定値から1を引いて0ベースインデックスに調整）
+                        const maxRows = CONFIG.MAX_EXCEL_ROWS - 1;
+                        if (decoded.e.r > maxRows) {
+                            decoded.e.r = maxRows;
+                            worksheet['!ref'] = XLSX.utils.encode_range(decoded);
+                            console.log(`Excel読み込み行数制限: ${originalRows}行 → ${CONFIG.MAX_EXCEL_ROWS}行に制限`);
+                        }
+                    }
+
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
+
                     resolve(jsonData);
                 } catch (error) {
                     reject(new Error('Excelファイルの読み込みに失敗しました: ' + error.message));
                 }
             };
-            
+
             reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
             reader.readAsArrayBuffer(file);
         });

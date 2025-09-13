@@ -53,20 +53,9 @@ class PointGPSApp {
             const file = e.target.files[0];
             if (file) {
                 try {
-                    const result = await this.gpsDataManager.loadExcelFile(file);
+                    const pointCount = await this.gpsDataManager.loadExcelFile(file);
                     this.pointManager.displayAllPoints();
-
-                    // 基本メッセージ
-                    let message = `${result.pointCount}個のポイントを読み込みました`;
-
-                    // 制限に達した場合の追加メッセージ
-                    if (result.wasLimited) {
-                        const limitMessage = CONFIG.MESSAGES.EXCEL_ROWS_LIMITED.replace('{rows}', CONFIG.MAX_EXCEL_ROWS);
-                        message = limitMessage + ` (${result.pointCount}個のポイントを処理)`;
-                        this.showMessage(message, 'warning');
-                    } else {
-                        this.showMessage(message);
-                    }
+                    this.showMessage(`${pointCount}個のポイントを読み込みました`);
                 } catch (error) {
                     console.error('Excel読み込みエラー:', error);
                     this.showError(CONFIG.MESSAGES.EXCEL_LOAD_ERROR);

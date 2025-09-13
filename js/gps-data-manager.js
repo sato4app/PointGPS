@@ -15,14 +15,9 @@ export class GPSDataManager {
 
         try {
             const jsonData = await this.fileHandler.loadExcelFile(file);
-            const result = this.parseExcelData(jsonData);
+            this.parseExcelData(jsonData);
 
-            return {
-                pointCount: this.gpsPoints.length,
-                wasLimited: result.wasLimited,
-                totalRows: result.totalRows,
-                processedRows: result.processedRows
-            };
+            return this.gpsPoints.length;
         } catch (error) {
             throw error;
         }
@@ -34,22 +29,9 @@ export class GPSDataManager {
         this.gpsPoints = [];
 
         if (jsonData.length < 2) {
-            return {
-                wasLimited: false,
-                totalRows: jsonData.length,
-                processedRows: 0
-            };
+            return;
         }
 
-        // 行数制限チェック（ヘッダー行を除く）
-        const totalDataRows = jsonData.length - 1;
-        const maxRows = CONFIG.MAX_EXCEL_ROWS;
-        const wasLimited = totalDataRows > maxRows;
-        const processRows = Math.min(totalDataRows, maxRows);
-
-        console.log(`Excel読み込み: 総行数${totalDataRows}行, 処理行数${processRows}行, 制限適用${wasLimited ? 'あり' : 'なし'}`);
-
-        
         const headerRow = jsonData[0];
         
         // ヘッダー行から列のインデックスを特定
@@ -74,8 +56,8 @@ export class GPSDataManager {
             throw new Error(`必須項目が不足しています: ${missingNames.join(', ')}`);
         }
         
-        // 2行目以降をデータとして処理（制限行数まで）
-        for (let i = 1; i <= processRows; i++) {
+        // 2行目以降をデータとして処理
+        for (let i = 1; i < jsonData.length; i++) {
             const row = jsonData[i];
             
             // 行に十分なデータがあるかチェック
@@ -113,12 +95,6 @@ export class GPSDataManager {
 
             this.gpsPoints.push(point);
         }
-
-        return {
-            wasLimited: wasLimited,
-            totalRows: totalDataRows,
-            processedRows: processRows
-        };
     }
 
     // ヘッダー行から各列のインデックスを特定（完全一致）
