@@ -1,5 +1,6 @@
 // ポイント表示・編集管理クラス
 import { CONFIG } from './config.js';
+import { DataUtils } from './data-utils.js';
 
 export class PointManager {
     constructor(mapManager, gpsDataManager) {
@@ -114,7 +115,7 @@ export class PointManager {
         this.addMarkerForPoint(point);
         await this.selectPoint(point.id, true); // 新しいポイントフラグをtrueにする
         this.updatePointCountDisplay();
-        this.showMessage(CONFIG.MESSAGES.POINT_ADDED);
+        this.showMessage(DataUtils.formatMessage(CONFIG.MESSAGES.POINT_ADDED, {id: point.id}));
         
         // 標高をAPIから取得
         await this.ensureElevationIfNeeded(point);
@@ -205,7 +206,7 @@ export class PointManager {
         const point = this.gpsDataManager.updatePoint(pointId, { lat, lng });
         if (point) {
             this.updatePointInfoDisplay(point);
-            this.showMessage(CONFIG.MESSAGES.POINT_MOVED);
+            this.showMessage(DataUtils.formatMessage(CONFIG.MESSAGES.POINT_MOVED, {id: pointId}));
         }
     }
 
@@ -225,14 +226,17 @@ export class PointManager {
 
         // データから削除
         this.gpsDataManager.removePoint(this.selectedPointId);
-        
+
+        // メッセージ用にポイントIDを保存
+        const deletedPointId = this.selectedPointId;
+
         // 選択状態をクリア
         this.selectedMarker = null;
         this.selectedPointId = null;
         this.clearPointInfoDisplay();
-        
+
         this.updatePointCountDisplay();
-        this.showMessage(CONFIG.MESSAGES.POINT_DELETED);
+        this.showMessage(DataUtils.formatMessage(CONFIG.MESSAGES.POINT_DELETED, {id: deletedPointId}));
     }
 
     // 全マーカーを削除

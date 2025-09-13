@@ -29,9 +29,9 @@ export const CONFIG = {
     MESSAGES: {
         EXCEL_LOAD_SUCCESS: 'Excelファイルを正常に読み込みました',
         EXCEL_LOAD_ERROR: 'Excelファイルの読み込みに失敗しました',
-        POINT_ADDED: 'ポイントを追加しました',
-        POINT_MOVED: 'ポイントを移動しました',
-        POINT_DELETED: 'ポイントを削除しました',
+        POINT_ADDED: 'ポイント {id} を追加しました',
+        POINT_MOVED: 'ポイント {id} を移動しました',
+        POINT_DELETED: 'ポイント {id} を削除しました',
         NO_POINT_SELECTED: 'ポイントが選択されていません',
         EXPORT_SUCCESS: 'ファイルを出力しました',
         EXPORT_ERROR: 'ファイル出力に失敗しました',

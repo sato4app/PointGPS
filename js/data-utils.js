@@ -179,4 +179,16 @@ export class DataUtils {
             String(cell).trim() === ''
         );
     }
+
+    /**
+     * テンプレート文字列をパラメータで置換
+     * @param {string} template - テンプレート文字列（例: 'ポイント {id} を追加しました'）
+     * @param {Object} params - 置換パラメータ（例: {id: 'A-01'}）
+     * @returns {string} 置換後の文字列
+     */
+    static formatMessage(template, params = {}) {
+        return template.replace(/\{(\w+)\}/g, (match, key) => {
+            return params[key] !== undefined ? params[key] : match;
+        });
+    }
 }
