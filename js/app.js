@@ -79,7 +79,7 @@ class PointGPSApp {
                 const moveBtn = document.getElementById('movePointBtn');
                 moveBtn.style.backgroundColor = CONFIG.MOVE_BUTTON_ACTIVE_COLOR;
                 this.pointManager.setMovingMode(true);
-                this.showMessage('ポイントをドラッグして移動してください');
+                this.showMessage(DataUtils.formatMessage('ポイント {id} をドラッグして移動してください', {id: this.pointManager.selectedPointId}));
             } else {
                 this.showMessage(CONFIG.MESSAGES.NO_POINT_SELECTED);
             }
