@@ -3,7 +3,7 @@ import { MapManager } from './map-manager.js';
 import { GPSDataManager } from './gps-data-manager.js';
 import { PointManager } from './point-manager.js';
 import { FileHandler } from './file-handler.js';
-import { Validators } from './validators.js';
+import { DataUtils } from './data-utils.js';
 import { CONFIG } from './config.js';
 
 class PointGPSApp {
@@ -132,7 +132,7 @@ class PointGPSApp {
         // ポイントIDのblurイベント（フォーカスアウト時の処理）
         pointIdField.addEventListener('blur', (e) => {
             const originalValue = e.target.value;
-            const formattedValue = Validators.formatPointId(originalValue);
+            const formattedValue = DataUtils.formatPointId(originalValue);
             
             if (originalValue !== formattedValue) {
                 e.target.value = formattedValue;

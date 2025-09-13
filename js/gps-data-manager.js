@@ -1,4 +1,6 @@
 import { CONFIG } from './config.js';
+import { DataUtils } from './data-utils.js';
+import { ElevationAPI } from './elevation-api.js';
 
 // GPSデータ管理クラス
 export class GPSDataManager {
@@ -61,23 +63,23 @@ export class GPSDataManager {
             const row = jsonData[i];
             
             // 行に十分なデータがあるかチェック
-            if (row.length === 0 || this.isEmptyRow(row)) {
+            if (row.length === 0 || DataUtils.isEmptyRow(row)) {
                 continue;
             }
             
             // 必須項目のデータを取得
-            const idValue = this.getCellValue(row, columnIndexes.id);
-            const locationValue = this.getCellValue(row, columnIndexes.location);
-            const latValue = this.getCellValue(row, columnIndexes.lat);
-            const lngValue = this.getCellValue(row, columnIndexes.lng);
+            const idValue = DataUtils.getCellValue(row, columnIndexes.id);
+            const locationValue = DataUtils.getCellValue(row, columnIndexes.location);
+            const latValue = DataUtils.getCellValue(row, columnIndexes.lat);
+            const lngValue = DataUtils.getCellValue(row, columnIndexes.lng);
             
             // 必須項目が空でないかチェック
             if (!idValue || !locationValue || !latValue || !lngValue) {
                 continue; // 必須項目が欠けている行はスキップ
             }
             
-            const lat = this.parseLatLng(latValue);
-            const lng = this.parseLatLng(lngValue);
+            const lat = DataUtils.parseLatLng(latValue);
+            const lng = DataUtils.parseLatLng(lngValue);
             
             // 緯度・経度が有効な数値かチェック
             if (isNaN(lat) || isNaN(lng)) {
@@ -88,9 +90,9 @@ export class GPSDataManager {
                 id: idValue,
                 lat: lat,
                 lng: lng,
-                elevation: this.normalizeElevation(this.getCellValue(row, columnIndexes.elevation)),
+                elevation: DataUtils.normalizeElevation(DataUtils.getCellValue(row, columnIndexes.elevation)),
                 location: locationValue,
-                remarks: this.getCellValue(row, columnIndexes.remarks) || ''
+                remarks: DataUtils.getCellValue(row, columnIndexes.remarks) || ''
             };
 
             this.gpsPoints.push(point);
@@ -128,90 +130,7 @@ export class GPSDataManager {
         return indexes;
     }
 
-    // セルの値を安全に取得
-    getCellValue(row, index) {
-        if (index === undefined || index >= row.length) {
-            return '';
-        }
-        const value = row[index];
-        return value !== undefined && value !== null ? String(value).trim() : '';
-    }
 
-    // 空行かどうかをチェック
-    isEmptyRow(row) {
-        return row.every(cell => 
-            cell === undefined || 
-            cell === null || 
-            String(cell).trim() === ''
-        );
-    }
-
-    // 緯度経度を10進数形式に変換
-    parseLatLng(value) {
-        if (typeof value === 'number') {
-            return value;
-        }
-        
-        if (typeof value === 'string') {
-            // DMS形式の場合の変換処理
-            const dmsMatch = value.match(/(\d+)[°度]\s*(\d+)[\'分]\s*([\d.]+)[\"秒]/);
-            if (dmsMatch) {
-                const degrees = parseFloat(dmsMatch[1]);
-                const minutes = parseFloat(dmsMatch[2]);
-                const seconds = parseFloat(dmsMatch[3]);
-                return degrees + minutes / 60 + seconds / 3600;
-            }
-            
-            // 通常の数値文字列として解析
-            return parseFloat(value);
-        }
-        
-        return NaN;
-    }
-
-
-    // 標高値を正規化（数値の場合は小数点1位まで、123.0は123にする）
-    normalizeElevation(elevation) {
-        if (!elevation || elevation === '') {
-            return '';
-        }
-        
-        const numValue = parseFloat(elevation);
-        if (!isNaN(numValue)) {
-            // 小数点1位まで表示し、.0の場合は整数表示
-            const formatted = numValue.toFixed(1);
-            return formatted.endsWith('.0') ? String(Math.round(numValue)) : formatted;
-        }
-        
-        // 数値として扱えない場合はそのまま返す
-        return String(elevation);
-    }
-
-    // 国土地理院の標高APIから標高データを取得
-    async fetchElevationFromAPI(lat, lng) {
-        try {
-            const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error('標高APIへのアクセスに失敗しました');
-            }
-            
-            const data = await response.json();
-            
-            if (data.elevation !== null && data.elevation !== undefined) {
-                // 標高データを小数点1位まで、123.0は123にする
-                const elevation = parseFloat(data.elevation);
-                const formatted = elevation.toFixed(1);
-                return formatted.endsWith('.0') ? Math.round(elevation) : parseFloat(formatted);
-            }
-            
-            return null;
-        } catch (error) {
-            console.warn('標高取得エラー:', error);
-            return null;
-        }
-    }
 
     // ポイントを追加
     addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '') {
@@ -219,7 +138,7 @@ export class GPSDataManager {
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
-            elevation: this.normalizeElevation(elevation),
+            elevation: DataUtils.normalizeElevation(elevation),
             location: location,
             remarks: remarks
         };
@@ -228,33 +147,20 @@ export class GPSDataManager {
         return point;
     }
     
-    // 標高がblankまたは0かチェックする（APIから取得が必要かどうか）
-    needsElevationFromAPI(elevation) {
-        if (!elevation || elevation === '') {
-            return true; // blank の場合
-        }
-        
-        const numValue = parseFloat(elevation);
-        if (isNaN(numValue)) {
-            return false; // 数値でない場合はAPIから取得しない
-        }
-        
-        return numValue === 0; // 0 の場合のみAPIから取得
-    }
     
     // 標高を設定または更新（blankまたは0の場合のみAPIから取得）
     async ensureValidElevation(pointId) {
         const point = this.getPointById(pointId);
         if (!point) return null;
-        
+
         // API取得が必要でない場合はそのまま返す
-        if (!this.needsElevationFromAPI(point.elevation)) {
+        if (!ElevationAPI.needsElevationFromAPI(point.elevation)) {
             return point.elevation;
         }
-        
+
         // APIから標高を取得
         try {
-            const elevation = await this.fetchElevationFromAPI(point.lat, point.lng);
+            const elevation = await ElevationAPI.fetchElevation(point.lat, point.lng);
             if (elevation !== null && elevation > 0) {
                 const formattedElevation = String(elevation);
                 this.updatePoint(pointId, { elevation: formattedElevation });
@@ -263,7 +169,7 @@ export class GPSDataManager {
         } catch (error) {
             console.warn('標高取得に失敗しました:', error);
         }
-        
+
         return point.elevation;
     }
     
@@ -293,10 +199,7 @@ export class GPSDataManager {
         if (index !== -1) {
             // 標高データがある場合は正規化
             if ('elevation' in updates) {
-                updates.elevation = this.normalizeElevation(updates.elevation);
-            }
-            if ('gpsElevation' in updates) {
-                updates.gpsElevation = this.normalizeElevation(updates.gpsElevation);
+                updates.elevation = DataUtils.normalizeElevation(updates.elevation);
             }
             
             Object.assign(this.gpsPoints[index], updates);
@@ -341,24 +244,12 @@ export class GPSDataManager {
         ];
 
         this.gpsPoints.forEach(point => {
-            // 標高を数値として処理（小数点1位まで）
-            let elevationValue = '';
-            if (point.elevation && point.elevation !== '') {
-                const numElevation = parseFloat(point.elevation);
-                if (!isNaN(numElevation)) {
-                    const formatted = numElevation.toFixed(1);
-                    elevationValue = formatted.endsWith('.0') ? Math.round(numElevation) : parseFloat(formatted);
-                } else {
-                    elevationValue = point.elevation; // 数値でない場合はそのまま
-                }
-            }
-            
             data.push([
                 point.id,
                 point.location,
                 parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
                 parseFloat(point.lng.toFixed(5)), // 小数点以下5桁まで
-                elevationValue,
+                DataUtils.normalizeElevation(point.elevation),
                 point.remarks
             ]);
         });
