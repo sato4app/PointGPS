@@ -18,6 +18,9 @@ export const CONFIG = {
     
     // ファイルタイプ
     ACCEPTED_EXCEL_EXTENSIONS: ['.xlsx'],
+
+    // Excel読み込み制限
+    MAX_EXCEL_ROWS: 1000,
     
     // UI設定
     MESSAGE_DISPLAY_DURATION: 3000, // ms
@@ -31,6 +34,7 @@ export const CONFIG = {
         POINT_DELETED: 'ポイントを削除しました',
         NO_POINT_SELECTED: 'ポイントが選択されていません',
         EXPORT_SUCCESS: 'ファイルを出力しました',
-        EXPORT_ERROR: 'ファイル出力に失敗しました'
+        EXPORT_ERROR: 'ファイル出力に失敗しました',
+        EXCEL_ROWS_LIMITED: '読み込み行数が上限に達しました。最初の{rows}行のみ処理されました。'
     }
 };

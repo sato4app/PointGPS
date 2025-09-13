@@ -53,9 +53,20 @@ class PointGPSApp {
             const file = e.target.files[0];
             if (file) {
                 try {
-                    const pointCount = await this.gpsDataManager.loadExcelFile(file);
+                    const result = await this.gpsDataManager.loadExcelFile(file);
                     this.pointManager.displayAllPoints();
-                    this.showMessage(`${pointCount}個のポイントを読み込みました`);
+
+                    // 基本メッセージ
+                    let message = `${result.pointCount}個のポイントを読み込みました`;
+
+                    // 制限に達した場合の追加メッセージ
+                    if (result.wasLimited) {
+                        const limitMessage = CONFIG.MESSAGES.EXCEL_ROWS_LIMITED.replace('{rows}', CONFIG.MAX_EXCEL_ROWS);
+                        message = limitMessage + ` (${result.pointCount}個のポイントを処理)`;
+                        this.showMessage(message, 'warning');
+                    } else {
+                        this.showMessage(message);
+                    }
                 } catch (error) {
                     console.error('Excel読み込みエラー:', error);
                     this.showError(CONFIG.MESSAGES.EXCEL_LOAD_ERROR);
@@ -161,26 +172,38 @@ class PointGPSApp {
         });
     }
 
-    showMessage(message) {
+    showMessage(message, type = 'info') {
         const messageArea = document.getElementById('messageArea');
         messageArea.textContent = message;
-        messageArea.className = 'message-area message-info';
+
+        // タイプに応じてクラスを設定
+        let className = 'message-area';
+        let displayDuration = CONFIG.MESSAGE_DISPLAY_DURATION;
+
+        switch (type) {
+            case 'warning':
+                className += ' message-warning';
+                displayDuration = CONFIG.MESSAGE_DISPLAY_DURATION * 1.5; // 警告は少し長く表示
+                break;
+            case 'error':
+                className += ' message-error';
+                displayDuration = CONFIG.MESSAGE_DISPLAY_DURATION * 2; // エラーは更に長く表示
+                break;
+            default:
+                className += ' message-info';
+                break;
+        }
+
+        messageArea.className = className;
         messageArea.style.display = 'block';
-        
+
         setTimeout(() => {
             messageArea.style.display = 'none';
-        }, CONFIG.MESSAGE_DISPLAY_DURATION);
+        }, displayDuration);
     }
 
     showError(message) {
-        const messageArea = document.getElementById('messageArea');
-        messageArea.textContent = message;
-        messageArea.className = 'message-area message-error';
-        messageArea.style.display = 'block';
-        
-        setTimeout(() => {
-            messageArea.style.display = 'none';
-        }, CONFIG.MESSAGE_DISPLAY_DURATION * 2); // エラーは少し長く表示
+        this.showMessage(message, 'error');
     }
 
     // 移動ボタンの背景色をリセット
