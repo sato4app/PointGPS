@@ -1,6 +1,7 @@
 // ポイント表示・編集管理クラス
 import { CONFIG } from './config.js';
 import { DataUtils } from './data-utils.js';
+import { ElevationAPI } from './elevation-api.js';
 
 export class PointManager {
     constructor(mapManager, gpsDataManager) {
@@ -184,7 +185,7 @@ export class PointManager {
     // ドラッグ後の標高取得・更新（強制的に再取得）
     async fetchAndUpdateElevationAfterDrag(pointId, lat, lng) {
         try {
-            const elevation = await this.gpsDataManager.fetchElevationFromAPI(lat, lng);
+            const elevation = await ElevationAPI.fetchElevation(lat, lng);
             
             if (elevation !== null) {
                 // 標高を更新
