@@ -9,8 +9,6 @@ export class FileHandler {
         this.currentFileName = '';
     }
 
-
-
     /**
      * Excelファイルを読み込み・解析（高速化版・行数制限付き）
      * @param {File} file - Excelファイル

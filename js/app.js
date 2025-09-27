@@ -109,7 +109,7 @@ class PointGPSApp {
                 const result = await this.gpsDataManager.exportToExcel(defaultFileName);
                 
                 if (result.success) {
-                    this.showMessage(`Excelファイルを保存しました: ${result.filename}`);
+                    this.showMessage(`Excelファイルを保存しました:\n${result.filename}`);
                 } else if (result.error !== 'キャンセル') {
                     this.showError(`保存エラー: ${result.error}`);
                 }
