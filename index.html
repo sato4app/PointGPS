@@ -48,6 +48,7 @@
                 <div class="import-control-row">
                     <button id="loadBtn" 
                             type="button" 
+                            title="GPS値の格納されているポイントデータ(Excel形式)の読み込み"
                             aria-describedby="load-help" 
                             class="import-button">
                         ポイント読み込み(Excel)
@@ -115,9 +116,9 @@
                 
                 <!-- ポイント操作ボタン -->
                 <div class="point-action-buttons">
-                    <button id="addPointBtn" class="point-action-btn" type="button">追加</button>
-                    <button id="movePointBtn" class="point-action-btn" type="button">移動</button>
-                    <button id="deletePointBtn" class="point-action-btn" type="button">削除</button>
+                    <button id="addPointBtn" class="point-action-btn" type="button" title="ポイントの追加">追加</button>
+                    <button id="movePointBtn" class="point-action-btn" type="button" title="ポイントの移動">移動</button>
+                    <button id="deletePointBtn" class="point-action-btn" type="button" title="ポイントの削除">削除</button>
                 </div>
             </div>
 
@@ -126,6 +127,7 @@
                 <div class="export-control-row">
                     <button id="exportBtn" 
                             type="button" 
+                            title="ポイントのデータ(GPS値、名称等)を出力(Excel形式)"
                             aria-describedby="export-help" 
                             class="control-button">
                         ポイント出力(Excel)
