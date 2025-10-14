@@ -26,10 +26,15 @@ export class MapManager {
             metric: true,
             imperial: false
         }).addTo(this.map);
-        
+
         // ズームコントロールを左上に配置
         L.control.zoom({
             position: 'topleft'
+        }).addTo(this.map);
+
+        // ズームコントロールを右下にも配置
+        L.control.zoom({
+            position: 'bottomright'
         }).addTo(this.map);
 
         console.log('地図を初期化しました');
