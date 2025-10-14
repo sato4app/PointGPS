@@ -27,9 +27,9 @@ export class MapManager {
             imperial: false
         }).addTo(this.map);
         
-        // ズームコントロールをスケールの上に配置
+        // ズームコントロールを左上に配置
         L.control.zoom({
-            position: 'bottomright'
+            position: 'topleft'
         }).addTo(this.map);
 
         console.log('地図を初期化しました');
