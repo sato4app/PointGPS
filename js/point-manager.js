@@ -289,7 +289,7 @@ export class PointManager {
     updatePointInfoDisplay(point, isNewPoint = false) {
         const pointIdField = document.getElementById('pointIdField');
         pointIdField.value = point.id;
-        document.getElementById('pointTypeSelect').value = point.type || 'ポイント';
+        document.getElementById('pointTypeSelect').value = point.type || ''; // デフォルト: 空白
         document.getElementById('latDecimalField').value = point.lat.toFixed(5);
         document.getElementById('lngDecimalField').value = point.lng.toFixed(5);
         document.getElementById('dmsField').value =
@@ -309,7 +309,7 @@ export class PointManager {
 
     // ポイント情報表示をクリア
     clearPointInfoDisplay() {
-        document.getElementById('pointTypeSelect').value = 'ポイント';
+        document.getElementById('pointTypeSelect').value = ''; // 空白に設定
         document.getElementById('pointIdField').value = '';
         document.getElementById('latDecimalField').value = '';
         document.getElementById('lngDecimalField').value = '';
@@ -317,6 +317,21 @@ export class PointManager {
         document.getElementById('elevationField').value = '';
         document.getElementById('locationField').value = '';
         document.getElementById('remarksField').value = '';
+    }
+
+    // 選択中のポイントを解除
+    clearSelection() {
+        // 前回選択されたマーカーの色をリセット
+        if (this.selectedMarker) {
+            this.selectedMarker.setStyle({
+                fillColor: CONFIG.POINT_MARKER_COLOR,
+                color: CONFIG.POINT_MARKER_COLOR
+            });
+        }
+
+        this.selectedMarker = null;
+        this.selectedPointId = null;
+        this.clearPointInfoDisplay();
     }
 
     // ポイント数表示を更新

@@ -75,6 +75,9 @@ class PointGPSApp {
                 this.pointManager.setAddingMode(false);
                 this.resetAddButtonColor();
             } else {
+                // 選択中のポイントを解除し、各項目をクリア
+                this.pointManager.clearSelection();
+
                 const addBtn = document.getElementById('addPointBtn');
                 addBtn.style.backgroundColor = '#90ee90'; // 薄い緑（ライトグリーン）
                 this.pointManager.setAddingMode(true);

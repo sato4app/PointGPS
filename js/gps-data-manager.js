@@ -87,7 +87,7 @@ export class GPSDataManager {
             }
             
             const point = {
-                type: DataUtils.getCellValue(row, columnIndexes.type) || 'ポイント', // 区分（デフォルト: ポイント）
+                type: DataUtils.getCellValue(row, columnIndexes.type) || '', // 区分（デフォルト: 空白）
                 id: idValue,
                 lat: lat,
                 lng: lng,
@@ -137,9 +137,9 @@ export class GPSDataManager {
 
 
     // ポイントを追加
-    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '', type = 'ポイント') {
+    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '', type = '') {
         const point = {
-            type: type || 'ポイント',
+            type: type || '', // デフォルト: 空白
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
@@ -250,7 +250,7 @@ export class GPSDataManager {
 
         this.gpsPoints.forEach(point => {
             data.push([
-                point.type || 'ポイント', // 区分（デフォルト: ポイント）
+                point.type || '', // 区分（デフォルト: 空白）
                 point.id,
                 point.location,
                 parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
