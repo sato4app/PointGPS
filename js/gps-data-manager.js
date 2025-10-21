@@ -238,6 +238,15 @@ export class GPSDataManager {
         return this.gpsPoints.find(p => p.id === id);
     }
 
+    // 指定座標に既存ポイントがあるかチェック（小数点以下5桁で比較）
+    hasPointAtLocation(lat, lng, tolerance = 0.000005) {
+        return this.gpsPoints.some(point => {
+            const latDiff = Math.abs(point.lat - lat);
+            const lngDiff = Math.abs(point.lng - lng);
+            return latDiff < tolerance && lngDiff < tolerance;
+        });
+    }
+
     // Excelファイルとして出力
     async exportToExcel(filename = 'gps_points') {
         if (!this.fileHandler) {

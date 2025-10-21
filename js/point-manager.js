@@ -112,6 +112,16 @@ export class PointManager {
 
     // 指定位置にポイントを追加
     async addPointAtLocation(latlng) {
+        // 既存ポイントとの重複チェック
+        if (this.gpsDataManager.hasPointAtLocation(latlng.lat, latlng.lng)) {
+            if (this.appInstance && this.appInstance.showMessage) {
+                this.appInstance.showMessage('この地点には既にポイントが存在します。同じ地点には追加できません。', 'warning');
+            } else {
+                this.showMessage('この地点には既にポイントが存在します。同じ地点には追加できません。');
+            }
+            return;
+        }
+
         const point = this.gpsDataManager.addPoint(latlng.lat, latlng.lng);
         this.addMarkerForPoint(point);
         await this.selectPoint(point.id, true); // 新しいポイントフラグをtrueにする
