@@ -223,6 +223,33 @@ body {
     color: #6c757d;
 }
 
+/* ポイント種別ドロップダウンリスト */
+#pointTypeSelect {
+    padding: 5px 7px;
+    border: 1px solid #bdc3c7;
+    border-radius: 3px;
+    font-size: 12px;
+    background-color: white;
+    cursor: pointer;
+    width: auto;
+    min-width: 70px;
+    flex: none;
+}
+
+#pointTypeSelect:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* IDラベル */
+.id-label {
+    font-size: 12px;
+    color: #34495e;
+    font-weight: 500;
+    margin-left: 22px;
+    user-select: none;
+}
+
 /* ポイント操作ボタン */
 .point-action-buttons {
     display: flex;
