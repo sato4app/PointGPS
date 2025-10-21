@@ -284,14 +284,15 @@ export class PointManager {
     updatePointInfoDisplay(point, isNewPoint = false) {
         const pointIdField = document.getElementById('pointIdField');
         pointIdField.value = point.id;
+        document.getElementById('pointTypeSelect').value = point.type || 'ポイント';
         document.getElementById('latDecimalField').value = point.lat.toFixed(5);
         document.getElementById('lngDecimalField').value = point.lng.toFixed(5);
-        document.getElementById('dmsField').value = 
+        document.getElementById('dmsField').value =
             this.formatDMSCoordinates(point.lng, point.lat);
         document.getElementById('elevationField').value = point.elevation;
         document.getElementById('locationField').value = point.location;
         document.getElementById('remarksField').value = point.remarks || '';
-        
+
     }
 
     // ドラッグ中のリアルタイム座標更新（緯度・経度・DMSのみ）
@@ -303,6 +304,7 @@ export class PointManager {
 
     // ポイント情報表示をクリア
     clearPointInfoDisplay() {
+        document.getElementById('pointTypeSelect').value = 'ポイント';
         document.getElementById('pointIdField').value = '';
         document.getElementById('latDecimalField').value = '';
         document.getElementById('lngDecimalField').value = '';
@@ -323,6 +325,7 @@ export class PointManager {
         if (!this.selectedPointId) return;
 
         const updates = {
+            type: document.getElementById('pointTypeSelect').value,
             id: document.getElementById('pointIdField').value,
             elevation: document.getElementById('elevationField').value,
             location: document.getElementById('locationField').value,
@@ -330,14 +333,14 @@ export class PointManager {
         };
 
         this.gpsDataManager.updatePoint(this.selectedPointId, updates);
-        
+
         // IDが変更された場合、マーカーのマップを更新
         if (updates.id !== this.selectedPointId) {
             const marker = this.markers.get(this.selectedPointId);
             this.markers.delete(this.selectedPointId);
             this.markers.set(updates.id, marker);
             this.selectedPointId = updates.id;
-            
+
             // ツールチップを更新
             marker.setTooltipContent(updates.id);
         }

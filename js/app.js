@@ -120,7 +120,7 @@ class PointGPSApp {
         });
 
         // ポイント情報フィールドの変更イベント
-        ['locationField', 'remarksField'].forEach(fieldId => {
+        ['pointTypeSelect', 'locationField', 'remarksField'].forEach(fieldId => {
             document.getElementById(fieldId).addEventListener('change', () => {
                 this.pointManager.updateSelectedPointInfo();
             });

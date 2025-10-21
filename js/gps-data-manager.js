@@ -87,6 +87,7 @@ export class GPSDataManager {
             }
             
             const point = {
+                type: DataUtils.getCellValue(row, columnIndexes.type) || 'ポイント', // 区分（デフォルト: ポイント）
                 id: idValue,
                 lat: lat,
                 lng: lng,
@@ -102,12 +103,15 @@ export class GPSDataManager {
     // ヘッダー行から各列のインデックスを特定（完全一致）
     identifyColumns(headerRow) {
         const indexes = {};
-        
+
         for (let i = 0; i < headerRow.length; i++) {
             const header = String(headerRow[i]).trim();
-            
+
             // 完全一致判定
-            if (header === 'ポイントID') {
+            if (header === '区分') {
+                indexes.type = i;
+            }
+            else if (header === 'ポイントID') {
                 indexes.id = i;
             }
             else if (header === '名称') {
@@ -126,15 +130,16 @@ export class GPSDataManager {
                 indexes.remarks = i;
             }
         }
-        
+
         return indexes;
     }
 
 
 
     // ポイントを追加
-    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '') {
+    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '', type = 'ポイント') {
         const point = {
+            type: type || 'ポイント',
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
@@ -142,7 +147,7 @@ export class GPSDataManager {
             location: location,
             remarks: remarks
         };
-        
+
         this.gpsPoints.push(point);
         return point;
     }
@@ -238,13 +243,14 @@ export class GPSDataManager {
         if (!this.fileHandler) {
             throw new Error('FileHandlerが設定されていません');
         }
-        
+
         const data = [
-            ['ポイントID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
+            ['区分', 'ポイントID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
         ];
 
         this.gpsPoints.forEach(point => {
             data.push([
+                point.type || 'ポイント', // 区分（デフォルト: ポイント）
                 point.id,
                 point.location,
                 parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
