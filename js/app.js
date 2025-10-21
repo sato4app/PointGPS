@@ -70,14 +70,27 @@ class PointGPSApp {
                 this.pointManager.setMovingMode(false);
                 this.resetMoveButtonColor();
             }
-            this.pointManager.setAddingMode(true);
-            this.showMessage('地図上をクリックしてポイントを追加してください');
+            // 追加モードが既に有効な場合は解除、そうでなければ有効化
+            if (this.pointManager.isAddingPoint) {
+                this.pointManager.setAddingMode(false);
+                this.resetAddButtonColor();
+            } else {
+                const addBtn = document.getElementById('addPointBtn');
+                addBtn.style.backgroundColor = '#90ee90'; // 薄い緑（ライトグリーン）
+                this.pointManager.setAddingMode(true);
+                this.showMessage('地図上をクリックしてポイントを追加してください');
+            }
         });
 
         document.getElementById('movePointBtn').addEventListener('click', () => {
             if (this.pointManager.selectedPointId) {
+                // 追加モードが有効な場合は解除
+                if (this.pointManager.isAddingPoint) {
+                    this.pointManager.setAddingMode(false);
+                    this.resetAddButtonColor();
+                }
                 const moveBtn = document.getElementById('movePointBtn');
-                moveBtn.style.backgroundColor = CONFIG.MOVE_BUTTON_ACTIVE_COLOR;
+                moveBtn.style.backgroundColor = '#90ee90'; // 薄い緑（ライトグリーン）
                 this.pointManager.setMovingMode(true);
                 this.showMessage(DataUtils.formatMessage('ポイント {id} をドラッグして移動してください', {id: this.pointManager.selectedPointId}));
             } else {
@@ -91,7 +104,12 @@ class PointGPSApp {
                 this.pointManager.setMovingMode(false);
                 this.resetMoveButtonColor();
             }
-            
+            // 追加モードが有効な場合は解除
+            if (this.pointManager.isAddingPoint) {
+                this.pointManager.setAddingMode(false);
+                this.resetAddButtonColor();
+            }
+
             const selectedPointId = this.pointManager.selectedPointId;
             if (selectedPointId && confirm(`選択したポイント ${selectedPointId} を削除しますか？`)) {
                 this.pointManager.deleteSelectedPoint();
@@ -155,6 +173,7 @@ class PointGPSApp {
             if (e.key === 'Escape') {
                 this.pointManager.setAddingMode(false);
                 this.pointManager.setMovingMode(false);
+                this.resetAddButtonColor();
                 this.resetMoveButtonColor();
                 this.showMessage('操作をキャンセルしました');
             }
@@ -199,6 +218,12 @@ class PointGPSApp {
     resetMoveButtonColor() {
         const moveBtn = document.getElementById('movePointBtn');
         moveBtn.style.backgroundColor = '';
+    }
+
+    // 追加ボタンの背景色をリセット
+    resetAddButtonColor() {
+        const addBtn = document.getElementById('addPointBtn');
+        addBtn.style.backgroundColor = '';
     }
 }
 

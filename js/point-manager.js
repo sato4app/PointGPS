@@ -117,17 +117,22 @@ export class PointManager {
         await this.selectPoint(point.id, true); // 新しいポイントフラグをtrueにする
         this.updatePointCountDisplay();
         this.showMessage(DataUtils.formatMessage(CONFIG.MESSAGES.POINT_ADDED, {id: point.id}));
-        
+
         // 標高をAPIから取得
         await this.ensureElevationIfNeeded(point);
-        
+
+        // 追加ボタンの色をリセット
+        if (this.appInstance && this.appInstance.resetAddButtonColor) {
+            this.appInstance.resetAddButtonColor();
+        }
+
         // すべての処理が完了してからポイントIDフィールドをフォーカス・全選択
         setTimeout(() => {
             const pointIdField = document.getElementById('pointIdField');
             if (pointIdField && point.id.match(/^仮\d{2}$/)) {
                 pointIdField.focus();
                 pointIdField.select();
-                
+
                 // さらに確実にするため、setSelectionRangeも併用
                 setTimeout(() => {
                     pointIdField.setSelectionRange(0, pointIdField.value.length);
