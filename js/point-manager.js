@@ -36,7 +36,7 @@ export class PointManager {
                 this.setAddingMode(false);
             }
         });
-        
+
         // 地図全体でのマウスイベント（ドラッグ用）
         const map = this.mapManager.getMap();
         map.on('mousemove', (e) => {
@@ -44,9 +44,12 @@ export class PointManager {
                 this.draggingMarker.setLatLng(e.latlng);
                 // ドラッグ中にリアルタイムで座標情報を更新
                 this.updateCoordinateFieldsRealtime(e.latlng.lat, e.latlng.lng);
+            } else if (this.isAddingPoint) {
+                // 追加モード中：マウス位置が既存ポイントに近いかチェック
+                this.checkNearbyPointForCursor(e.latlng);
             }
         });
-        
+
         map.on('mouseup', (e) => {
             if (this.isDragging && this.draggingMarker) {
                 this.stopDragging();
@@ -112,8 +115,8 @@ export class PointManager {
 
     // 指定位置にポイントを追加
     async addPointAtLocation(latlng) {
-        // 既存ポイントとの重複チェック
-        if (this.gpsDataManager.hasPointAtLocation(latlng.lat, latlng.lng)) {
+        // 既存ポイントとの重複チェック（ピクセル距離基準）
+        if (this.hasPointNearLocation(latlng.lat, latlng.lng)) {
             if (this.appInstance && this.appInstance.showMessage) {
                 this.appInstance.showMessage('この地点には既にポイントが存在します。同じ地点には追加できません。', 'warning');
             } else {
@@ -263,6 +266,37 @@ export class PointManager {
         this.markers.clear();
         this.selectedMarker = null;
         this.selectedPointId = null;
+    }
+
+    // 追加モード中にマウス位置の近くに既存ポイントがあるかチェック
+    checkNearbyPointForCursor(latlng) {
+        const hasNearbyPoint = this.hasPointNearLocation(latlng.lat, latlng.lng);
+
+        // カーソル形状を変更
+        if (hasNearbyPoint) {
+            document.body.style.cursor = 'not-allowed';
+        } else {
+            document.body.style.cursor = 'crosshair';
+        }
+    }
+
+    // 指定位置の近くに既存ポイントがあるかチェック（ピクセル距離基準）
+    hasPointNearLocation(lat, lng) {
+        const map = this.mapManager.getMap();
+        const clickPoint = map.latLngToLayerPoint(L.latLng(lat, lng));
+        const threshold = CONFIG.POINT_MARKER_RADIUS + 5; // マーカー半径 + 5ピクセルの余裕
+
+        for (const marker of this.markers.values()) {
+            const markerLatLng = marker.getLatLng();
+            const markerPoint = map.latLngToLayerPoint(markerLatLng);
+            const distance = clickPoint.distanceTo(markerPoint);
+
+            if (distance <= threshold) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ポイント追加モードの設定
