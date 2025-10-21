@@ -289,7 +289,7 @@ export class PointManager {
     updatePointInfoDisplay(point, isNewPoint = false) {
         const pointIdField = document.getElementById('pointIdField');
         pointIdField.value = point.id;
-        document.getElementById('pointTypeSelect').value = point.type || ''; // デフォルト: 空白
+        document.getElementById('pointTypeSelect').value = point.type || 'ポイント'; // デフォルト: ポイント
         document.getElementById('latDecimalField').value = point.lat.toFixed(5);
         document.getElementById('lngDecimalField').value = point.lng.toFixed(5);
         document.getElementById('dmsField').value =

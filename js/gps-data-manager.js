@@ -137,9 +137,9 @@ export class GPSDataManager {
 
 
     // ポイントを追加
-    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '', type = '') {
+    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '', type = 'ポイント') {
         const point = {
-            type: type || '', // デフォルト: 空白
+            type: type || 'ポイント', // デフォルト: ポイント
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
