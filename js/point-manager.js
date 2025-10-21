@@ -122,6 +122,12 @@ export class PointManager {
             } else {
                 this.showMessage('この地点には既にポイントが存在します。同じ地点には追加できません。');
             }
+
+            // 追加ボタンの色をリセット
+            if (this.appInstance && this.appInstance.resetAddButtonColor) {
+                this.appInstance.resetAddButtonColor();
+            }
+
             return;
         }
 
