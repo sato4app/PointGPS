@@ -157,6 +157,7 @@ body {
 #pointCountField {
     width: 48px;
     flex: none;
+    text-align: right;
 }
 
 #pointIdField,
