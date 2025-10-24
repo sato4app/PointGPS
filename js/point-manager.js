@@ -172,7 +172,9 @@ export class PointManager {
                 const prevColor = this.getMarkerColorByType(prevPoint.type);
                 this.selectedMarker.setStyle({
                     fillColor: prevColor,
-                    color: prevColor
+                    color: prevColor,
+                    weight: 2,  // 通常の線の太さに戻す
+                    fillOpacity: 0.6  // 通常の不透明度に戻す
                 });
             }
         }
@@ -180,11 +182,20 @@ export class PointManager {
         // 新しいマーカーを選択
         const marker = this.markers.get(pointId);
         if (marker) {
-            marker.setStyle({
-                fillColor: CONFIG.SELECTED_POINT_COLOR,
-                color: CONFIG.SELECTED_POINT_COLOR
-            });
-            
+            const point = this.gpsDataManager.getPointById(pointId);
+            if (point) {
+                // 区分に応じた色を取得して、少し明るくする（選択状態を視覚的に示す）
+                const baseColor = this.getMarkerColorByType(point.type);
+                const selectedColor = this.getLighterColor(baseColor);
+
+                marker.setStyle({
+                    fillColor: selectedColor,
+                    color: selectedColor,
+                    weight: 3,  // 線を太くして選択状態を強調
+                    fillOpacity: 0.9  // 不透明度を上げて選択状態を強調
+                });
+            }
+
             this.selectedMarker = marker;
             this.selectedPointId = pointId;
             
@@ -385,7 +396,9 @@ export class PointManager {
                 const markerColor = this.getMarkerColorByType(point.type);
                 this.selectedMarker.setStyle({
                     fillColor: markerColor,
-                    color: markerColor
+                    color: markerColor,
+                    weight: 2,  // 通常の線の太さに戻す
+                    fillOpacity: 0.6  // 通常の不透明度に戻す
                 });
             }
         }
@@ -405,26 +418,39 @@ export class PointManager {
     updateSelectedPointInfo() {
         if (!this.selectedPointId) return;
 
-        const oldType = this.gpsDataManager.getPointById(this.selectedPointId)?.type;
+        const currentPoint = this.gpsDataManager.getPointById(this.selectedPointId);
+        const oldType = currentPoint?.type;
+        const newType = document.getElementById('pointTypeSelect').value;
+
         const updates = {
-            type: document.getElementById('pointTypeSelect').value,
+            type: newType,
             id: document.getElementById('pointIdField').value,
             elevation: document.getElementById('elevationField').value,
             location: document.getElementById('locationField').value,
             remarks: document.getElementById('remarksField').value
         };
 
+        // 区分が変更された場合、IDを自動生成
+        if (newType !== oldType) {
+            const newId = this.gpsDataManager.generateIdByType(newType || 'ポイント');
+            updates.id = newId;
+
+            // UIのポイントIDフィールドも更新
+            document.getElementById('pointIdField').value = newId;
+        }
+
         this.gpsDataManager.updatePoint(this.selectedPointId, updates);
 
         // 区分が変更された場合、マーカーの色を更新
-        if (updates.type !== oldType && this.selectedMarker) {
-            const newColor = this.getMarkerColorByType(updates.type);
+        if (newType !== oldType && this.selectedMarker) {
+            const newColor = this.getMarkerColorByType(newType);
+            const selectedColor = this.getLighterColor(newColor);
             this.selectedMarker.setStyle({
-                fillColor: CONFIG.SELECTED_POINT_COLOR,
-                color: CONFIG.SELECTED_POINT_COLOR
+                fillColor: selectedColor,
+                color: selectedColor,
+                weight: 3,
+                fillOpacity: 0.9
             });
-            // 内部的な色情報を保持（選択解除時に正しい色に戻すため）
-            this.selectedMarker._originalColor = newColor;
         }
 
         // IDが変更された場合、マーカーのマップを更新
@@ -503,6 +529,22 @@ export class PointManager {
             return CONFIG.MARKER_COLORS.default;
         }
         return CONFIG.MARKER_COLORS[type] || CONFIG.MARKER_COLORS.default;
+    }
+
+    // 色を明るくする（選択状態の視覚的フィードバック用）
+    getLighterColor(hexColor) {
+        // #RRGGBBの形式をRGB値に変換
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+
+        // 各成分を30%明るくする（255に近づける）
+        const lighterR = Math.min(255, Math.floor(r + (255 - r) * 0.3));
+        const lighterG = Math.min(255, Math.floor(g + (255 - g) * 0.3));
+        const lighterB = Math.min(255, Math.floor(b + (255 - b) * 0.3));
+
+        // 16進数に戻す
+        return `#${lighterR.toString(16).padStart(2, '0')}${lighterG.toString(16).padStart(2, '0')}${lighterB.toString(16).padStart(2, '0')}`;
     }
 
     // メッセージを表示

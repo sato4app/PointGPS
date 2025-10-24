@@ -15,8 +15,8 @@ export const CONFIG = {
 
     // 区分別マーカー色設定
     MARKER_COLORS: {
-        '分岐点': '#800080',  // 紫
-        '交差点': '#8b4513',  // 茶色（saddle brown）
+        '分岐点': '#ba55d3',  // 薄い紫（medium orchid）
+        '交差点': '#654321',  // 濃い茶（dark brown）
         'default': '#008000'  // 通常ポイント（緑）
     },
 

@@ -180,22 +180,40 @@ export class GPSDataManager {
     
     // 仮IDを生成（仮01から始まる連番）
     generateTemporaryId() {
-        const existingTempIds = this.gpsPoints
-            .map(p => p.id)
-            .filter(id => id.match(/^仮\d{2}$/))
-            .map(id => parseInt(id.substring(1)))
-            .sort((a, b) => a - b);
-        
-        let nextNum = 1;
-        for (const num of existingTempIds) {
-            if (num === nextNum) {
-                nextNum++;
-            } else {
+        return this.generateIdByType('ポイント');
+    }
+
+    // 区分に応じたIDを生成
+    generateIdByType(type) {
+        let prefix, pattern;
+
+        switch(type) {
+            case '分岐点':
+                prefix = 'SP';
+                pattern = /^SP\d{2}$/;
                 break;
-            }
+            case '交差点':
+                prefix = 'CP';
+                pattern = /^CP\d{2}$/;
+                break;
+            case 'ポイント':
+            default:
+                prefix = '仮';
+                pattern = /^仮\d{2}$/;
+                break;
         }
-        
-        return `仮${nextNum.toString().padStart(2, '0')}`;
+
+        // 既存の同じ区分のIDから最大値を取得
+        const existingIds = this.gpsPoints
+            .map(p => p.id)
+            .filter(id => pattern.test(id))
+            .map(id => parseInt(id.substring(prefix.length)));
+
+        // 最大値+1を使用（欠番は無視）
+        const maxNum = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+        const nextNum = maxNum + 1;
+
+        return `${prefix}${nextNum.toString().padStart(2, '0')}`;
     }
 
     // ポイントを更新
