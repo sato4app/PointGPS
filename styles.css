@@ -166,6 +166,17 @@ body {
     text-align: right;
 }
 
+/* ラベルの幅カスタマイズ */
+.point-count-label {
+    min-width: 72px !important; /* 60px + 20px */
+    margin-left: 8px;
+}
+
+.other-count-label {
+    min-width: 20px !important; /* 60px - 40px */
+    margin-left: 12px;
+}
+
 #pointIdField,
 #elevationField {
     width: 60px;
