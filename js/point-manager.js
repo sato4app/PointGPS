@@ -198,14 +198,14 @@ export class PointManager {
 
             this.selectedMarker = marker;
             this.selectedPointId = pointId;
-            
+
             // ポイント情報を表示
-            const point = this.gpsDataManager.getPointById(pointId);
-            if (point) {
-                this.updatePointInfoDisplay(point, isNewPoint);
-                
+            const selectedPoint = this.gpsDataManager.getPointById(pointId);
+            if (selectedPoint) {
+                this.updatePointInfoDisplay(selectedPoint, isNewPoint);
+
                 // 標高が正の値でない場合は経度・緯度から標高を取得
-                await this.ensureElevationIfNeeded(point);
+                await this.ensureElevationIfNeeded(selectedPoint);
             }
         }
     }
