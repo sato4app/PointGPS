@@ -410,8 +410,9 @@ export class PointManager {
 
     // ポイント数表示を更新
     updatePointCountDisplay() {
-        const count = this.gpsDataManager.getPointCount();
-        document.getElementById('pointCountField').value = count;
+        const counts = this.gpsDataManager.getPointCountByType();
+        document.getElementById('pointCountField').value = counts.point;
+        document.getElementById('otherCountField').value = counts.junction;
     }
 
     // 選択されたポイントの情報を更新
@@ -462,6 +463,11 @@ export class PointManager {
 
             // ツールチップを更新
             marker.setTooltipContent(updates.id);
+        }
+
+        // 区分が変更された場合、カウント表示を更新
+        if (newType !== oldType) {
+            this.updatePointCountDisplay();
         }
     }
 

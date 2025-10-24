@@ -251,6 +251,25 @@ export class GPSDataManager {
         return this.gpsPoints.length;
     }
 
+    // 区分別のポイント数を取得
+    getPointCountByType() {
+        const counts = {
+            point: 0,      // ポイント
+            junction: 0    // 分岐点 + 交差点
+        };
+
+        this.gpsPoints.forEach(point => {
+            const type = point.type || 'ポイント';
+            if (type === 'ポイント' || type === '') {
+                counts.point++;
+            } else if (type === '分岐点' || type === '交差点') {
+                counts.junction++;
+            }
+        });
+
+        return counts;
+    }
+
     // IDでポイントを検索
     getPointById(id) {
         return this.gpsPoints.find(p => p.id === id);

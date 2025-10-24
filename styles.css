@@ -160,6 +160,12 @@ body {
     text-align: right;
 }
 
+#otherCountField {
+    width: 48px;
+    flex: none;
+    text-align: right;
+}
+
 #pointIdField,
 #elevationField {
     width: 60px;
