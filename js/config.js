@@ -12,7 +12,14 @@ export const CONFIG = {
     POINT_MARKER_COLOR: '#008000',    // 緑(#008000) 赤色(#ff0000)
     POINT_MARKER_RADIUS: 6,
     SELECTED_POINT_COLOR: '#32cd32',  // ライムグリーン(#32cd32)  // ライム:明るい緑(#00ff00)
-    
+
+    // 区分別マーカー色設定
+    MARKER_COLORS: {
+        '分岐点': '#800080',  // 紫
+        '交差点': '#8b4513',  // 茶色（saddle brown）
+        'default': '#008000'  // 通常ポイント（緑）
+    },
+
     // UI色設定
     MOVE_BUTTON_ACTIVE_COLOR: '#32cd32',  // ライムグリーン(#32cd32)
     
