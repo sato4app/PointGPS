@@ -160,16 +160,26 @@ body {
     text-align: right;
 }
 
-#pointIdField,
+#pointIdField {
+    width: 60px;
+    flex: none;
+}
+
 #elevationField {
     width: 60px;
     flex: none;
+    text-align: right;
 }
 
 #latDecimalField,
 #lngDecimalField {
     width: 80px;
     flex: none;
+    text-align: right;
+}
+
+#dmsField {
+    text-align: center;
 }
 
 .unit-label {
