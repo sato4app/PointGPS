@@ -292,9 +292,9 @@ body {
     width: 36px;
     height: 36px;
     padding: 0;
-    background-color: #95a5a6;
-    color: white;
-    border: none;
+    background-color: #d5dbdb;
+    color: #7f8c8d;
+    border: 1px solid #bdc3c7;
     border-radius: 50%;
     font-size: 18px;
     font-weight: bold;
@@ -307,7 +307,8 @@ body {
 }
 
 .help-button:hover {
-    background-color: #7f8c8d;
+    background-color: #bdc3c7;
+    color: #2c3e50;
     transform: scale(1.1);
 }
 

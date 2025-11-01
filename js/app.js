@@ -123,7 +123,7 @@ class PointGPSApp {
         const helpBtn = document.getElementById('helpBtn');
 
         helpBtn.addEventListener('click', () => {
-            window.open('PointGPS-help.html', '_blank');
+            window.open('PointGPS-help.html', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
         });
 
         // ポイント情報フィールドの変更イベント
