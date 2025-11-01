@@ -287,6 +287,34 @@ body {
     background-color: #d35400;
 }
 
+/* ヘルプボタン */
+.help-button {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.help-button:hover {
+    background-color: #7f8c8d;
+    transform: scale(1.1);
+}
+
+.help-button:active {
+    transform: scale(0.95);
+}
+
 
 /* メッセージエリア */
 .message-area {
