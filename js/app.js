@@ -119,11 +119,11 @@ class PointGPSApp {
             }
         });
 
-        // ヘルプボタン
+        // チュートリアルボタン
         const helpBtn = document.getElementById('helpBtn');
 
         helpBtn.addEventListener('click', () => {
-            window.open('PointGPS-help.html', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+            window.open('tutorial/tutorial.html', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
         });
 
         // ポイント情報フィールドの変更イベント

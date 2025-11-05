@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポイントGPS チュートリアル</title>
+    <link rel="stylesheet" href="tutorial-css.css">
+    <script src="tutorial-config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 動画セクション -->
+        <div class="video-section">
+            <div class="video-wrapper">
+                <video id="tutorialVideo" controls>
+                    <source src="video/tutorial.mp4" type="video/mp4">
+                    お使いのブラウザは動画タグをサポートしていません。
+                </video>
+                <div class="video-controls">
+                    <p>※ 動画を再生すると、右側の台本が自動的に同期します</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 台本セクション -->
+        <div class="script-section" id="scriptSection">
+            <h1 class="script-title">📋 台本</h1>
+            <!-- 台本はJavaScriptで動的に読み込まれます -->
+        </div>
+    </div>
+
+    <script src="tutorial-js.js"></script>
+</body>
+</html>
