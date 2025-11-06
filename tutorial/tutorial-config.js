@@ -2,8 +2,10 @@
 // 各セグメントの再生時間と対応するファイルを定義
 
 const TUTORIAL_CONFIG = {
-    // 動画ファイルのパス
-    videoPath: 'video/tutorial.mp4',
+    // YouTube動画URL
+    videoPath: 'https://youtu.be/-wBnHrMF4OI',
+    // YouTube埋め込みURL
+    videoEmbedUrl: 'https://www.youtube.com/embed/-wBnHrMF4OI',
 
     // 各セグメントの設定
     // duration: そのセグメントの長さ（秒）
