@@ -34,6 +34,14 @@ async function loadScriptFile(scriptPath) {
 async function buildScriptSections() {
     console.log('台本セグメントを生成中...');
 
+    // tutorial-config.jsが読み込まれているか確認
+    if (typeof SEGMENTS_WITH_TIMESTAMPS === 'undefined') {
+        console.error('SEGMENTS_WITH_TIMESTAMPSが定義されていません。tutorial-config.jsが正しく読み込まれているか確認してください。');
+        return;
+    }
+
+    console.log('セグメント数:', SEGMENTS_WITH_TIMESTAMPS.length);
+
     // タイトル以降の内容をクリア
     const title = scriptSection.querySelector('.script-title');
     scriptSection.innerHTML = '';
@@ -165,8 +173,11 @@ function onYouTubeIframeAPIReady() {
 
 // DOMとYouTube APIの両方が準備完了したら初期化
 function initializeIfReady() {
+    console.log('initializeIfReady呼び出し - isDOMReady:', isDOMReady, 'isYouTubeAPIReady:', isYouTubeAPIReady);
+
     if (isDOMReady && isYouTubeAPIReady) {
         console.log('初期化開始');
+
         // scriptSection要素を取得
         scriptSection = document.getElementById('scriptSection');
 
@@ -175,21 +186,41 @@ function initializeIfReady() {
             return;
         }
 
+        console.log('scriptSection要素取得成功');
+
+        // tutorial-config.jsが読み込まれているか確認
+        if (typeof SEGMENTS_WITH_TIMESTAMPS === 'undefined') {
+            console.error('SEGMENTS_WITH_TIMESTAMPSが定義されていません');
+            return;
+        }
+
+        console.log('SEGMENTS_WITH_TIMESTAMPS取得成功:', SEGMENTS_WITH_TIMESTAMPS.length, 'セグメント');
+
         // YouTube Playerを初期化
-        player = new YT.Player('tutorialVideo', {
-            events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange
-            }
-        });
+        try {
+            player = new YT.Player('tutorialVideo', {
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+            console.log('YouTube Player初期化成功');
+        } catch (error) {
+            console.error('YouTube Player初期化エラー:', error);
+        }
     }
 }
 
 // プレイヤーの準備が完了したときに呼ばれる
-function onPlayerReady(event) {
+async function onPlayerReady(event) {
     console.log('YouTube Player準備完了');
     // 台本セグメントを動的に生成
-    buildScriptSections();
+    try {
+        await buildScriptSections();
+        console.log('台本セグメント生成完了');
+    } catch (error) {
+        console.error('台本セグメント生成エラー:', error);
+    }
 }
 
 // プレイヤーの状態が変化したときに呼ばれる
