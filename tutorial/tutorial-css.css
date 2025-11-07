@@ -138,8 +138,8 @@ video {
     background: #555;
 }
 
-/* レスポンシブデザイン */
-@media (max-width: 1600px) {
+/* レスポンシブデザイン - 小画面のみ縦並びにする */
+@media (max-width: 900px) {
     .container {
         flex-direction: column;
         height: auto;
@@ -148,6 +148,12 @@ video {
     .video-section {
         width: 100%;
         padding: 0;
+    }
+
+    .video-wrapper iframe {
+        height: auto;
+        max-height: 60vh;
+        border-radius: 0;
     }
 
     video {
