@@ -3,13 +3,17 @@
 
 // DOM要素の取得
 let player; // YouTube Player オブジェクト
-const scriptSection = document.getElementById('scriptSection');
+let scriptSection; // スクリプトセクション（DOMContentLoaded後に取得）
 
 // 音声管理用の変数
 let currentAudio = null;
 let audioElements = new Map(); // 音声要素のキャッシュ
 let paragraphs = []; // 動的に生成される段落要素
 let updateInterval = null; // 時間更新用のインターバル
+
+// YouTube APIの準備完了フラグ
+let isYouTubeAPIReady = false;
+let isDOMReady = false;
 
 // scriptファイルを読み込む関数
 async function loadScriptFile(scriptPath) {
@@ -154,12 +158,31 @@ function highlightParagraph(paragraph) {
 
 // YouTube Player APIの準備完了時に呼ばれる関数
 function onYouTubeIframeAPIReady() {
-    player = new YT.Player('tutorialVideo', {
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
+    console.log('YouTube API準備完了');
+    isYouTubeAPIReady = true;
+    initializeIfReady();
+}
+
+// DOMとYouTube APIの両方が準備完了したら初期化
+function initializeIfReady() {
+    if (isDOMReady && isYouTubeAPIReady) {
+        console.log('初期化開始');
+        // scriptSection要素を取得
+        scriptSection = document.getElementById('scriptSection');
+
+        if (!scriptSection) {
+            console.error('scriptSection要素が見つかりません');
+            return;
         }
-    });
+
+        // YouTube Playerを初期化
+        player = new YT.Player('tutorialVideo', {
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+    }
 }
 
 // プレイヤーの準備が完了したときに呼ばれる
@@ -249,6 +272,13 @@ function setupEventListeners() {
         });
     });
 }
+
+// DOMの準備完了時
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM準備完了');
+    isDOMReady = true;
+    initializeIfReady();
+});
 
 // ページを離れる前にリソースをクリーンアップ
 window.addEventListener('beforeunload', () => {
