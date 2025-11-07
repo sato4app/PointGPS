@@ -26,7 +26,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: 0;
 }
 
@@ -37,20 +37,21 @@ body {
 
 /* YouTube iframe - アスペクト比16:9を維持 */
 .video-wrapper iframe {
-    width: calc(100% - 40px);
-    height: calc((100vw - 400px - 40px) * 9 / 16);
-    max-height: calc(100vh - 40px);
-    margin: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    width: 100%;
+    height: calc((100vw - 400px) * 9 / 16);
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 video {
     width: 100%;
-    max-width: 1280px;
-    height: 720px;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
     border-radius: 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: none;
 }
 
 .video-controls {
