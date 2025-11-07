@@ -2,13 +2,14 @@
 // scriptフォルダのファイルを動的に読み込んで表示
 
 // DOM要素の取得
-const video = document.getElementById('tutorialVideo');
+let player; // YouTube Player オブジェクト
 const scriptSection = document.getElementById('scriptSection');
 
 // 音声管理用の変数
 let currentAudio = null;
 let audioElements = new Map(); // 音声要素のキャッシュ
 let paragraphs = []; // 動的に生成される段落要素
+let updateInterval = null; // 時間更新用のインターバル
 
 // scriptファイルを読み込む関数
 async function loadScriptFile(scriptPath) {
@@ -151,72 +152,99 @@ function highlightParagraph(paragraph) {
     });
 }
 
-// イベントリスナーを設定
-function setupEventListeners() {
-    // 動画の再生時間に応じて台本と音声を同期
-    video.addEventListener('timeupdate', function() {
-        const currentTime = video.currentTime;
-
-        paragraphs.forEach((paragraph, index) => {
-            const start = parseFloat(paragraph.getAttribute('data-start'));
-            const end = parseFloat(paragraph.getAttribute('data-end'));
-
-            if (currentTime >= start && currentTime < end) {
-                // まだハイライトされていない場合のみ処理
-                if (!paragraph.classList.contains('active')) {
-                    highlightParagraph(paragraph);
-                    playAudio(index);
-                }
-            }
-        });
+// YouTube Player APIの準備完了時に呼ばれる関数
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('tutorialVideo', {
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+        }
     });
+}
 
-    // 動画の再生開始時
-    video.addEventListener('play', function() {
+// プレイヤーの準備が完了したときに呼ばれる
+function onPlayerReady(event) {
+    console.log('YouTube Player準備完了');
+    // 台本セグメントを動的に生成
+    buildScriptSections();
+}
+
+// プレイヤーの状態が変化したときに呼ばれる
+function onPlayerStateChange(event) {
+    // YT.PlayerState.PLAYING = 1
+    if (event.data === YT.PlayerState.PLAYING) {
         console.log('動画再生開始');
-    });
-
-    // 動画の一時停止時
-    video.addEventListener('pause', function() {
-        stopAudio();
+        startTimeUpdate();
+    }
+    // YT.PlayerState.PAUSED = 2
+    else if (event.data === YT.PlayerState.PAUSED) {
         console.log('動画一時停止');
-    });
-
-    // 動画の再生終了時
-    video.addEventListener('ended', function() {
+        stopTimeUpdate();
+        stopAudio();
+    }
+    // YT.PlayerState.ENDED = 0
+    else if (event.data === YT.PlayerState.ENDED) {
+        console.log('動画再生終了');
+        stopTimeUpdate();
         stopAudio();
         paragraphs.forEach(p => p.classList.remove('active'));
-        console.log('動画再生終了');
-    });
+    }
+}
 
-    // 動画のシーク時（再生位置変更時）
-    video.addEventListener('seeked', function() {
-        stopAudio();
-        console.log('動画シーク完了');
-    });
+// 時間更新を開始
+function startTimeUpdate() {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+    updateInterval = setInterval(updateCurrentTime, 100); // 100msごとに更新
+}
 
+// 時間更新を停止
+function stopTimeUpdate() {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+    }
+}
+
+// 現在の再生時間を取得してハイライトを更新
+function updateCurrentTime() {
+    if (!player || typeof player.getCurrentTime !== 'function') {
+        return;
+    }
+
+    const currentTime = player.getCurrentTime();
+
+    paragraphs.forEach((paragraph, index) => {
+        const start = parseFloat(paragraph.getAttribute('data-start'));
+        const end = parseFloat(paragraph.getAttribute('data-end'));
+
+        if (currentTime >= start && currentTime < end) {
+            // まだハイライトされていない場合のみ処理
+            if (!paragraph.classList.contains('active')) {
+                highlightParagraph(paragraph);
+                playAudio(index);
+            }
+        }
+    });
+}
+
+// イベントリスナーを設定
+function setupEventListeners() {
     // 段落をクリックすると、その時点から動画を再生
     paragraphs.forEach((paragraph, index) => {
         paragraph.addEventListener('click', function() {
             const start = parseFloat(this.getAttribute('data-start'));
 
             // 動画の再生位置を変更
-            video.currentTime = start;
+            if (player && typeof player.seekTo === 'function') {
+                player.seekTo(start, true);
+                player.playVideo();
 
-            // 動画を再生
-            const playPromise = video.play();
-
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        // 該当の段落をハイライト
-                        highlightParagraph(paragraph);
-                        // 音声を再生
-                        playAudio(index);
-                    })
-                    .catch(error => {
-                        console.error('動画再生エラー:', error);
-                    });
+                // 該当の段落をハイライト
+                highlightParagraph(paragraph);
+                // 音声を再生
+                playAudio(index);
             }
         });
     });
@@ -224,22 +252,7 @@ function setupEventListeners() {
 
 // ページを離れる前にリソースをクリーンアップ
 window.addEventListener('beforeunload', () => {
+    stopTimeUpdate();
     stopAudio();
     audioElements.clear();
-});
-
-// 初期化処理
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('ポイントGPS チュートリアル読み込み開始');
-
-    // tutorial-config.jsが読み込まれているか確認
-    if (typeof SEGMENTS_WITH_TIMESTAMPS === 'undefined') {
-        console.error('tutorial-config.jsが読み込まれていません');
-        return;
-    }
-
-    // 台本セグメントを動的に生成
-    await buildScriptSections();
-
-    console.log('ポイントGPS チュートリアル読み込み完了');
 });

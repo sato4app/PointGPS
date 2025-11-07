@@ -19,20 +19,29 @@ body {
     margin: 0 auto;
 }
 
-/* 動画セクション */
+/* 動画セクション - 左側に大きく表示 */
 .video-section {
-    width: 1280px;
+    flex: 1;
     background-color: #000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    padding: 20px;
 }
 
 .video-wrapper {
     width: 100%;
-    max-width: 1280px;
+    max-width: 100%;
+}
+
+/* YouTube iframe - アスペクト比16:9を維持 */
+.video-wrapper iframe {
+    width: 100%;
+    height: calc((100vw - 400px) * 9 / 16);
+    max-height: calc(100vh - 120px);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 video {
@@ -55,9 +64,10 @@ video {
     margin-top: 5px;
 }
 
-/* 台本セクション */
+/* 台本セクション - 右側に固定幅で表示 */
 .script-section {
-    width: 320px;
+    width: 400px;
+    flex-shrink: 0;
     background-color: #fff;
     overflow-y: auto;
     padding: 20px;

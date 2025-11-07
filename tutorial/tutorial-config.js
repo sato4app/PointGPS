@@ -13,17 +13,17 @@ const TUTORIAL_CONFIG = {
     // audioFile: 音声ファイル
     segments: [
         {
-            duration: 17,
+            duration: 14.5,
             scriptFile: 'script/script_01.txt',
             audioFile: 'audio/audio_01.wav'
         },
         {
-            duration: 18.5,
+            duration: 16.5,
             scriptFile: 'script/script_02.txt',
             audioFile: 'audio/audio_02.wav'
         },
         {
-            duration: 22.5,
+            duration: 21.5,
             scriptFile: 'script/script_03.txt',
             audioFile: 'audio/audio_03.wav'
         },
@@ -53,7 +53,7 @@ const TUTORIAL_CONFIG = {
             audioFile: 'audio/audio_08.wav'
         },
         {
-            duration: 16.5,
+            duration: 12.5,
             scriptFile: 'script/script_09.txt',
             audioFile: 'audio/audio_09.wav'
         },
