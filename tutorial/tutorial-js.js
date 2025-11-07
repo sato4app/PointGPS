@@ -81,6 +81,8 @@ async function buildScriptSections() {
     paragraphs = Array.from(document.querySelectorAll('.script-paragraph'));
 
     console.log(`台本セグメント生成完了: ${paragraphs.length}個`);
+    console.log('scriptSection.children.length:', scriptSection.children.length);
+    console.log('scriptSection HTML:', scriptSection.innerHTML.substring(0, 200));
 
     // イベントリスナーを設定
     setupEventListeners();

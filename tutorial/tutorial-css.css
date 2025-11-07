@@ -68,11 +68,14 @@ video {
 /* 台本セクション - 右側に固定幅で表示 */
 .script-section {
     width: 400px;
+    min-height: 100vh;
     flex-shrink: 0;
     background-color: #fff;
     overflow-y: auto;
     padding: 20px;
     box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1;
 }
 
 .script-title {
