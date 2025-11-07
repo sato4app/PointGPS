@@ -3,9 +3,11 @@
 
 const TUTORIAL_CONFIG = {
     // YouTube動画URL
+    // videoPath: 'https://youtu.be/-wBnHrMF4OI',
     videoPath: 'https://youtu.be/-wBnHrMF4OI',
     // YouTube埋め込みURL
-    videoEmbedUrl: 'https://www.youtube.com/embed/-wBnHrMF4OI',
+    // videoEmbedUrl: 'https://www.youtube.com/embed/-wBnHrMF4OI',
+    videoEmbedUrl: 'https://www.youtube.com/embed/NoMdtTrtSrM',
 
     // 各セグメントの設定
     // duration: そのセグメントの長さ（秒）
