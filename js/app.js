@@ -106,10 +106,12 @@ class PointGPSApp {
         exportBtn.addEventListener('click', async () => {
             try {
                 // 標高未取得のポイントがあれば確認
+                // window.confirm() は transient activation を消費して
+                // 後続の showSaveFilePicker が失敗するため、カスタムダイアログを使う
                 const unfetched = this.gpsDataManager.getPointsWithoutElevation();
                 let shouldFetch = false;
                 if (unfetched.length > 0) {
-                    shouldFetch = confirm(
+                    shouldFetch = await this.showConfirmDialog(
                         `${unfetched.length}個のポイントで標高が未取得です。取得して出力しますか？`
                     );
                 }
@@ -229,6 +231,47 @@ class PointGPSApp {
 
     showError(message) {
         this.showMessage(message, 'error');
+    }
+
+    // window.confirm() の代替（transient user activation を消費しない）
+    // ダイアログ内のボタンクリックで新たなアクティベーションが得られるため、
+    // resolve 後に showSaveFilePicker を呼んでも保存ダイアログが開く
+    showConfirmDialog(message) {
+        return new Promise((resolve) => {
+            const dialog = document.getElementById('confirmDialog');
+            const messageEl = document.getElementById('confirmDialogMessage');
+            const yesBtn = document.getElementById('confirmDialogYes');
+            const noBtn = document.getElementById('confirmDialogNo');
+
+            messageEl.textContent = message;
+
+            const cleanup = (result) => {
+                yesBtn.removeEventListener('click', onYes);
+                noBtn.removeEventListener('click', onNo);
+                dialog.removeEventListener('cancel', onCancel);
+                if (dialog.open) {
+                    dialog.close();
+                }
+                resolve(result);
+            };
+            const onYes = () => cleanup(true);
+            const onNo = () => cleanup(false);
+            const onCancel = (e) => {
+                e.preventDefault();
+                cleanup(false);
+            };
+
+            yesBtn.addEventListener('click', onYes);
+            noBtn.addEventListener('click', onNo);
+            dialog.addEventListener('cancel', onCancel);
+
+            if (typeof dialog.showModal === 'function') {
+                dialog.showModal();
+            } else {
+                // 非対応ブラウザ用フォールバック
+                resolve(window.confirm(message));
+            }
+        });
     }
 
     // 移動ボタンの背景色をリセット
