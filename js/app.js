@@ -105,6 +105,30 @@ class PointGPSApp {
 
         exportBtn.addEventListener('click', async () => {
             try {
+                // 標高未取得のポイントがあれば確認
+                const unfetched = this.gpsDataManager.getPointsWithoutElevation();
+                if (unfetched.length > 0) {
+                    const shouldFetch = confirm(
+                        `${unfetched.length}個のポイントで標高が未取得です。取得して出力しますか？`
+                    );
+                    if (shouldFetch) {
+                        this.showMessage(`標高を取得しています... (0/${unfetched.length})`);
+                        const fetchResult = await this.gpsDataManager.fetchElevationForUnfetchedPoints(
+                            (current, total) => {
+                                this.showMessage(`標高を取得しています... (${current}/${total})`);
+                            }
+                        );
+                        // 選択中ポイントの標高表示を更新
+                        if (this.pointManager.selectedPointId) {
+                            const selectedPoint = this.gpsDataManager.getPointById(this.pointManager.selectedPointId);
+                            if (selectedPoint) {
+                                document.getElementById('elevationField').value = selectedPoint.elevation;
+                            }
+                        }
+                        this.showMessage(`標高取得が完了しました（${fetchResult.success}/${fetchResult.total}件成功）`);
+                    }
+                }
+
                 const defaultFileName = this.fileHandler.getDefaultFileName();
                 const result = await this.gpsDataManager.exportToExcel(defaultFileName);
 

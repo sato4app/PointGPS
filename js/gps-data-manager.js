@@ -172,6 +172,34 @@ export class GPSDataManager {
 
         return point.elevation;
     }
+
+    // 標高未取得（blankまたは0）のポイント一覧を取得
+    getPointsWithoutElevation() {
+        return this.gpsPoints.filter(p => ElevationAPI.needsElevationFromAPI(p.elevation));
+    }
+
+    // 標高未取得ポイントの標高を一括取得（連続呼び出し時はレート制限のため間隔を空ける）
+    async fetchElevationForUnfetchedPoints(onProgress = null) {
+        const targets = this.getPointsWithoutElevation();
+        let successCount = 0;
+
+        for (let i = 0; i < targets.length; i++) {
+            const point = targets[i];
+            if (onProgress) {
+                onProgress(i + 1, targets.length, point);
+            }
+            const result = await this.ensureValidElevation(point.id);
+            if (result && parseFloat(result) > 0) {
+                successCount++;
+            }
+            // 国土地理院APIへの連続アクセスを避けるため間隔を空ける
+            if (i < targets.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+
+        return { total: targets.length, success: successCount };
+    }
     
     // 仮IDを生成（仮01から始まる連番）
     generateTemporaryId() {
