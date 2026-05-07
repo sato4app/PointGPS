@@ -107,11 +107,19 @@ class PointGPSApp {
             try {
                 // 標高未取得のポイントがあれば確認
                 const unfetched = this.gpsDataManager.getPointsWithoutElevation();
+                let shouldFetch = false;
                 if (unfetched.length > 0) {
-                    const shouldFetch = confirm(
+                    shouldFetch = confirm(
                         `${unfetched.length}個のポイントで標高が未取得です。取得して出力しますか？`
                     );
-                    if (shouldFetch) {
+                }
+
+                // 保存ダイアログを先に表示し、確定後に標高取得→書き込みを実行
+                // （長時間の非同期処理後はユーザーアクティベーションが切れて保存ダイアログが出なくなるため）
+                const defaultFileName = this.fileHandler.getDefaultFileName();
+                const result = await this.gpsDataManager.exportToExcel(
+                    defaultFileName,
+                    shouldFetch ? async () => {
                         this.showMessage(`標高を取得しています... (0/${unfetched.length})`);
                         const fetchResult = await this.gpsDataManager.fetchElevationForUnfetchedPoints(
                             (current, total) => {
@@ -126,11 +134,8 @@ class PointGPSApp {
                             }
                         }
                         this.showMessage(`標高取得が完了しました（${fetchResult.success}/${fetchResult.total}件成功）`);
-                    }
-                }
-
-                const defaultFileName = this.fileHandler.getDefaultFileName();
-                const result = await this.gpsDataManager.exportToExcel(defaultFileName);
+                    } : null
+                );
 
                 if (result.success) {
                     this.showMessage(`Excelファイルを保存しました:\n${result.filename}`);

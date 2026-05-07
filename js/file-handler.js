@@ -160,19 +160,17 @@ export class FileHandler {
 
     /**
      * ユーザーが場所を指定してExcelファイルを保存
-     * @param {Array} data - Excelデータ配列
+     * @param {Array|Function} dataOrProvider - Excelデータ配列、またはデータを返す（async）関数
      * @param {string} defaultFilename - デフォルトファイル名
      * @returns {Promise<{success: boolean, filename?: string, error?: string}>} 保存結果
      */
-    async saveExcelWithUserChoice(data, defaultFilename) {
-        const workbook = this.createExcelWorkbook(data);
-        const excelData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([excelData], { 
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-        });
-        
-        try {
-            if ('showSaveFilePicker' in window) {
+    async saveExcelWithUserChoice(dataOrProvider, defaultFilename) {
+        // 先にファイル保存先を取得（ユーザーアクティベーション保持のため、長時間の非同期処理より前に呼ぶ）
+        let fileHandle = null;
+        let useFallback = !('showSaveFilePicker' in window);
+
+        if (!useFallback) {
+            try {
                 let savePickerOptions = {
                     suggestedName: defaultFilename.endsWith('.xlsx') ? defaultFilename : defaultFilename + '.xlsx',
                     types: [{
@@ -182,7 +180,7 @@ export class FileHandler {
                         }
                     }]
                 };
-                
+
                 if (this.currentFileHandle) {
                     try {
                         const parentDirectoryHandle = await this.currentFileHandle.getParent();
@@ -191,28 +189,46 @@ export class FileHandler {
                         // 同じディレクトリの取得に失敗、デフォルトディレクトリを使用
                     }
                 }
-                
-                const fileHandle = await window.showSaveFilePicker(savePickerOptions);
+
+                fileHandle = await window.showSaveFilePicker(savePickerOptions);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return { success: false, error: 'キャンセル' };
+                }
+                useFallback = true;
+            }
+        }
+
+        // ファイル保存先確定後にデータを生成（ここで標高取得など長時間処理が走ってもOK）
+        let data;
+        try {
+            data = typeof dataOrProvider === 'function' ? await dataOrProvider() : dataOrProvider;
+        } catch (error) {
+            return { success: false, error: error.message || 'データ生成エラー' };
+        }
+
+        const workbook = this.createExcelWorkbook(data);
+        const excelData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelData], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+
+        if (!useFallback && fileHandle) {
+            try {
                 const writable = await fileHandle.createWritable();
                 await writable.write(blob);
                 await writable.close();
-                
                 return { success: true, filename: fileHandle.name };
-            } else {
-                this.downloadExcel(data, defaultFilename);
-                return { success: true, filename: defaultFilename };
+            } catch (error) {
+                useFallback = true;
             }
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                return { success: false, error: 'キャンセル' };
-            }
-            
-            try {
-                this.downloadExcel(data, defaultFilename);
-                return { success: true, filename: defaultFilename };
-            } catch (downloadError) {
-                return { success: false, error: error.message };
-            }
+        }
+
+        try {
+            this.downloadExcel(data, defaultFilename);
+            return { success: true, filename: defaultFilename };
+        } catch (downloadError) {
+            return { success: false, error: downloadError.message };
         }
     }
 }

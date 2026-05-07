@@ -261,39 +261,51 @@ export class GPSDataManager {
         return this.gpsPoints.find(p => p.id === id);
     }
 
-    // Excelファイルとして出力
-    async exportToExcel(filename = 'gps_points') {
+    // Excelファイルとして出力（beforeWrite: 保存先確定後・データ生成前に走る非同期処理）
+    async exportToExcel(filename = 'gps_points', beforeWrite = null) {
         if (!this.fileHandler) {
             throw new Error('FileHandlerが設定されていません');
         }
-        
-        const data = [
-            ['ポイントID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
-        ];
 
-        this.gpsPoints.forEach(point => {
-            // 標高を数値に変換（空文字の場合は空文字のまま）
-            let elevationValue = '';
-            if (point.elevation && point.elevation !== '') {
-                const numValue = parseFloat(point.elevation);
-                if (!isNaN(numValue)) {
-                    elevationValue = numValue; // 数値として出力
-                } else {
-                    elevationValue = point.elevation; // 数値でない場合はそのまま
+        const buildData = () => {
+            const data = [
+                ['ポイントID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
+            ];
+
+            this.gpsPoints.forEach(point => {
+                // 標高を数値に変換（空文字の場合は空文字のまま）
+                let elevationValue = '';
+                if (point.elevation && point.elevation !== '') {
+                    const numValue = parseFloat(point.elevation);
+                    if (!isNaN(numValue)) {
+                        elevationValue = numValue; // 数値として出力
+                    } else {
+                        elevationValue = point.elevation; // 数値でない場合はそのまま
+                    }
                 }
-            }
 
-            data.push([
-                point.id,
-                point.location,
-                parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
-                parseFloat(point.lng.toFixed(5)), // 小数点以下5桁まで
-                elevationValue,
-                point.remarks
-            ]);
-        });
+                data.push([
+                    point.id,
+                    point.location,
+                    parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
+                    parseFloat(point.lng.toFixed(5)), // 小数点以下5桁まで
+                    elevationValue,
+                    point.remarks
+                ]);
+            });
 
-        return await this.fileHandler.saveExcelWithUserChoice(data, filename);
+            return data;
+        };
+
+        return await this.fileHandler.saveExcelWithUserChoice(
+            async () => {
+                if (beforeWrite) {
+                    await beforeWrite();
+                }
+                return buildData();
+            },
+            filename
+        );
     }
 
 }
