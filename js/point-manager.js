@@ -127,8 +127,8 @@ export class PointManager {
 
         this.markers.set(point.id, marker);
         
-        // ツールチップ表示
-        marker.bindTooltip(point.id, {
+        // ツールチップ表示（IDはHTMLとして解釈させずテキストで表示）
+        marker.bindTooltip(DataUtils.createTextElement(point.id), {
             permanent: false,
             direction: 'top',
             offset: [0, -10]
@@ -371,7 +371,7 @@ export class PointManager {
             this.selectedPointId = updates.id;
             
             // ツールチップを更新
-            marker.setTooltipContent(updates.id);
+            marker.setTooltipContent(DataUtils.createTextElement(updates.id));
         }
     }
 

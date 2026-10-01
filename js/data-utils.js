@@ -191,4 +191,15 @@ export class DataUtils {
             return params[key] !== undefined ? params[key] : match;
         });
     }
+
+    /**
+     * 文字列をテキストとして持つ要素を作成する（HTMLとして解釈させないため）
+     * @param {string} text - 表示する文字列
+     * @returns {HTMLSpanElement} テキストノードを持つspan要素
+     */
+    static createTextElement(text) {
+        const span = document.createElement('span');
+        span.textContent = String(text);
+        return span;
+    }
 }

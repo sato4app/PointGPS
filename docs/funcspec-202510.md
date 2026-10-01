@@ -484,9 +484,10 @@ Excelファイル（.xlsx形式）からGPSポイントデータを読み込む�
 - **整合性検証**: integrity + crossorigin属性
 
 #### SheetJS (XLSX)
-- **バージョン**: 0.18.5
-- **CDN**: unpkg.com
+- **バージョン**: 0.20.3
+- **CDN**: cdn.sheetjs.com（SheetJS公式CDN）
 - **用途**: Excelファイル読み込み・書き込み
+- **整合性検証**: integrity + crossorigin属性
 
 #### 国土地理院タイル
 - **URL**: `https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png`
@@ -515,6 +516,12 @@ Excelファイル（.xlsx形式）からGPSポイントデータを読み込む�
 - `innerHTML`の使用回避
 - `textContent`の使用推奨
 - ユーザー入力のサニタイズ
+- Leafletツールチップには文字列ではなくテキストノードを持つ要素を渡す（`DataUtils.createTextElement`）
+
+### Content Security Policy
+- `<meta http-equiv="Content-Security-Policy">` で `script-src` を `'self'`・`https://unpkg.com`・`https://cdn.sheetjs.com` に限定
+- インラインスクリプト・`eval` は使用しない（追加するとCSPにより実行されない）
+- 地図タイル・標高APIの通信を妨げないよう、`script-src` 以外は制限しない
 
 ### CSRF対策
 - ローカル処理のみ
