@@ -104,8 +104,8 @@ js/
   data-utils.js         ポイントID の整形、度分秒の変換、標高値の正規化
   elevation-api.js      国土地理院 標高API からの標高取得
 docs/
-  funcspec-202510.md    機能仕様書
-  UsersGuide-202510.md  利用者の手引
+  funcspec-202611.md    機能仕様書
+  UsersGuide-202611.md  利用者の手引
   ポイントGPS-Excel規約-20261125.md  ポイントGPS Excel ファイルの規約
 ```
 
@@ -118,6 +118,6 @@ docs/
 
 ## ドキュメント
 
-- [機能仕様書](docs/funcspec-202510.md)
-- [利用者の手引](docs/UsersGuide-202510.md)
+- [機能仕様書](docs/funcspec-202611.md)
+- [利用者の手引](docs/UsersGuide-202611.md)
 - [ポイントGPS-Excel規約](docs/ポイントGPS-Excel規約-20261125.md)
