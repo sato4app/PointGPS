@@ -151,7 +151,7 @@ class PointGPSApp {
         });
 
         // ポイント情報フィールドの変更イベント
-        ['locationField', 'remarksField'].forEach(fieldId => {
+        ['locationField', 'englishNameField', 'remarksField'].forEach(fieldId => {
             document.getElementById(fieldId).addEventListener('change', () => {
                 this.pointManager.updateSelectedPointInfo();
             });

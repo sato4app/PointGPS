@@ -92,6 +92,7 @@ export class GPSDataManager {
                 lng: lng,
                 elevation: DataUtils.normalizeElevation(DataUtils.getCellValue(row, columnIndexes.elevation)),
                 location: locationValue,
+                englishName: DataUtils.getCellValue(row, columnIndexes.englishName) || '',
                 remarks: DataUtils.getCellValue(row, columnIndexes.remarks) || ''
             };
 
@@ -113,6 +114,9 @@ export class GPSDataManager {
             else if (header === '名称') {
                 indexes.location = i;
             }
+            else if (header === '英語名') {
+                indexes.englishName = i;
+            }
             else if (header === '緯度') {
                 indexes.lat = i;
             }
@@ -133,13 +137,14 @@ export class GPSDataManager {
 
 
     // ポイントを追加
-    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '') {
+    addPoint(lat, lng, id = null, elevation = '', location = '', remarks = '', englishName = '') {
         const point = {
             id: id || this.generateTemporaryId(),
             lat: lat,
             lng: lng,
             elevation: DataUtils.normalizeElevation(elevation),
             location: location,
+            englishName: englishName,
             remarks: remarks
         };
         
@@ -269,7 +274,7 @@ export class GPSDataManager {
 
         const buildData = () => {
             const data = [
-                ['ポイントID', '名称', '緯度', '経度', '標高', '備考'] // ヘッダー
+                ['ポイントID', '名称', '英語名', '緯度', '経度', '標高', '備考'] // ヘッダー（ポイントGPS-Excel規約の列順）
             ];
 
             this.gpsPoints.forEach(point => {
@@ -287,6 +292,7 @@ export class GPSDataManager {
                 data.push([
                     point.id,
                     point.location,
+                    point.englishName || '',
                     parseFloat(point.lat.toFixed(5)), // 小数点以下5桁まで
                     parseFloat(point.lng.toFixed(5)), // 小数点以下5桁まで
                     elevationValue,

@@ -322,6 +322,7 @@ export class PointManager {
             this.formatDMSCoordinates(point.lng, point.lat);
         document.getElementById('elevationField').value = point.elevation;
         document.getElementById('locationField').value = point.location;
+        document.getElementById('englishNameField').value = point.englishName || '';
         document.getElementById('remarksField').value = point.remarks || '';
         
     }
@@ -341,6 +342,7 @@ export class PointManager {
         document.getElementById('dmsField').value = '';
         document.getElementById('elevationField').value = '';
         document.getElementById('locationField').value = '';
+        document.getElementById('englishNameField').value = '';
         document.getElementById('remarksField').value = '';
     }
 
@@ -358,6 +360,7 @@ export class PointManager {
             id: document.getElementById('pointIdField').value,
             elevation: document.getElementById('elevationField').value,
             location: document.getElementById('locationField').value,
+            englishName: document.getElementById('englishNameField').value,
             remarks: document.getElementById('remarksField').value
         };
 
